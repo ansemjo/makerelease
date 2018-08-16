@@ -12,10 +12,7 @@ eprintf() { printf >&2 "$@"; }
 # timestamp in YYYY-MM-DD-UNIXEPOCH format
 TIMESTAMP=$(date --utc +%F-%s)
 mkdir -p "$RELEASEDIR/$TIMESTAMP"
-
-# echo release name
-NAME=${1:?release name required as argument}
-eprintf 'releasing %s %s ...\n' "$NAME" "$TIMESTAMP"
+eprintf 'releasing @ %s ...\n' "$TIMESTAMP"
 
 # unpack source tarball, with decompression based on mime-type
 eprintf 'reading tar archive from stdin ...\n'
@@ -49,9 +46,8 @@ for target in $TARGETS; do
 
   OS=$(dirname "$target")
   ARCH=$(basename "$target")
-  FILE="$NAME-$OS-$ARCH"
   OUTDIR="$RELEASEDIR/$TIMESTAMP"
-  export NAME OS ARCH FILE OUTDIR TIMESTAMP
+  export OS ARCH OUTDIR TIMESTAMP
 
   make -e release
 
