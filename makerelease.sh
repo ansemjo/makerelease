@@ -10,8 +10,9 @@ ignore-missing-target() { [[ $? -eq 2 ]] && true; }
 eprintf() { printf >&2 "$@"; }
 
 # timestamp in YYYY-MM-DD-UNIXEPOCH format
-TIMESTAMP=$(date --utc +%F-%s)
-mkdir -p "$RELEASEDIR/$TIMESTAMP"
+export TIMESTAMP=$(date --utc +%F-%s)
+export RELEASEDIR="$RELEASEDIR/$TIMESTAMP"
+mkdir -p "$RELEASEDIR"
 eprintf 'releasing @ %s ...\n' "$TIMESTAMP"
 
 # unpack source tarball, with decompression based on mime-type
@@ -31,11 +32,11 @@ cat $SOURCE | (
 
 # make any required preparations
 eprintf 'make preparations if necessary ...\n'
-make prepare-release || ignore-missing-target
+make -e prepare-release || ignore-missing-target
 
 # define target list in OS/ARCH format (env > make list > default)
 DEFAULT_TARGETS=$(echo {darwin,freebsd,linux,openbsd}/{386,amd64} linux/arm{,64})
-MAKE_TARGETS=$(make release-target-list) || ignore-missing-target
+MAKE_TARGETS=$(make -e release-target-list) || ignore-missing-target
 TARGETS=${TARGETS:-${MAKE_TARGETS:-$DEFAULT_TARGETS}}
 eprintf 'defined release targets:\n'; eprintf ' - %s\n' $TARGETS
 
@@ -46,12 +47,12 @@ for target in $TARGETS; do
 
   OS=$(dirname "$target")
   ARCH=$(basename "$target")
-  OUTDIR="$RELEASEDIR/$TIMESTAMP"
-  export OS ARCH OUTDIR TIMESTAMP
+  export OS ARCH
 
   make -e release
 
 done
 
-# calculate sha256 checksums of built files
-(cd "$RELEASEDIR/$TIMESTAMP" && sha256sum * | tee sha256sums)
+# finish up release, e.g. calculate checksums
+eprintf 'finish up release ...\n'
+make -e finish-release
