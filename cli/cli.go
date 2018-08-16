@@ -1,19 +1,35 @@
 package main
 
-import "github.com/spf13/cobra"
+import (
+	"os"
 
+	"github.com/spf13/cobra"
+)
+
+// main cli command
 var cmd = &cobra.Command{
 	Use:   "makerelease",
-	Short: "make reproducible releases",
+	Short: "Make reproducible releases by building them in a container.",
 	PreRunE: func(cmd *cobra.Command, args []string) (err error) {
-		return checkFileArgFlags(cmd)
+		err = checkOutDirFlag(cmd)
+		if err != nil {
+			return
+		}
+		return checkInFileFlag(cmd)
 	},
-	Run: func(cmd *cobra.Command, args []string) {
-		makeRelease(infile, outdirArg)
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		return makeRelease(infile, outdir)
 	},
 }
 
 func init() {
 	cmd.Flags().SortFlags = false
-	addFileArgFlags(cmd)
+	addOutdirFlag(cmd)
+	addInfileFlag(cmd)
+}
+
+func main() {
+	if err := cmd.Execute(); err != nil {
+		os.Exit(1)
+	}
 }

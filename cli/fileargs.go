@@ -12,29 +12,17 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// input: source tarball
 var (
-	infileFlag = []string{"src", "f", "source tarball"}
-	infileArg  string
-	infile     io.ReadCloser
-
-	outdirFlag = []string{"dir", "d", "releases directory"}
-	outdirArg  string
+	infile        io.ReadCloser
+	infileArg     string
+	infileFlag    = []string{"src", "f", "source tarball"}
+	addInfileFlag = func(cmd *cobra.Command) {
+		cmd.Flags().StringVarP(&infileArg, infileFlag[0], infileFlag[1], "", infileFlag[2])
+	}
 )
 
-func addFileArgFlags(cmd *cobra.Command) {
-	cmd.Flags().StringVarP(&infileArg, infileFlag[0], infileFlag[1], "", infileFlag[2])
-	cmd.Flags().StringVarP(&outdirArg, outdirFlag[0], outdirFlag[1], "releases", outdirFlag[2])
-}
-
-func checkFileArgFlags(cmd *cobra.Command) (err error) {
-	err = checkInFileFlag(cmd)
-	if err != nil {
-		return
-	}
-	err = checkOutDirFlag(cmd)
-	return
-}
-
+// open the input file, use stdin if none given
 func checkInFileFlag(cmd *cobra.Command) (err error) {
 	if cmd.Flag(infileFlag[0]).Changed && infileArg != "-" {
 		f, err := os.Open(infileArg)
@@ -48,6 +36,17 @@ func checkInFileFlag(cmd *cobra.Command) (err error) {
 	return
 }
 
+// output: release directory
+var (
+	outdir        string
+	outdirArg     string
+	outdirFlag    = []string{"dir", "d", "release directory"}
+	addOutdirFlag = func(cmd *cobra.Command) {
+		cmd.Flags().StringVarP(&outdirArg, outdirFlag[0], outdirFlag[1], "releases", outdirFlag[2])
+	}
+)
+
+// check that the output directory exists and transform to absolute path
 func checkOutDirFlag(cmd *cobra.Command) (err error) {
 	stat, err := os.Stat(outdirArg)
 	if err != nil {
@@ -60,6 +59,6 @@ func checkOutDirFlag(cmd *cobra.Command) (err error) {
 	if err != nil {
 		return err
 	}
-	outdirArg = absolute
+	outdir = absolute
 	return
 }

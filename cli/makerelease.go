@@ -1,99 +1,118 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"io"
 	"os"
 	"os/signal"
+	"os/user"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/mount"
-	"github.com/docker/docker/client"
 	"github.com/docker/docker/pkg/stdcopy"
 )
 
-// create default client and negotiate api version
-func newDockerClient() (cli *client.Client, ctx context.Context, err error) {
-	ctx = context.Background()
-	cli, err = client.NewClientWithOpts()
+const image = "go-releaser"
+
+// make a release from the sourcecode in the source tarball
+func makeRelease(tar io.ReadCloser, releases string) (err error) {
+
+	// connect to docker daemon
+	cli, ctx, err := newDockerClient()
 	if err != nil {
 		return
 	}
-	cli.NegotiateAPIVersion(ctx)
-	fmt.Println("negotiated api version", cli.ClientVersion())
-	return
-}
 
-func makeRelease(tar io.ReadCloser, releases string) {
-
-	cli, ctx, err := newDockerClient()
-
-	res, err := cli.ContainerCreate(ctx, &container.Config{
-		Image:     "go-releaser",
-		OpenStdin: true,
-		StdinOnce: true,
-		User:      "1000:100",
-	}, &container.HostConfig{
-		AutoRemove: true,
-		Mounts: []mount.Mount{
-			{
-				Type:   mount.TypeBind,
-				Source: releases,
-				Target: "/releases",
-			},
-		},
-	}, nil, "")
+	// get current user as UID:GID string
+	id, err := func() (string, error) {
+		cur, err := user.Current()
+		if err != nil {
+			return "", err
+		}
+		return fmt.Sprintf("%s:%s", cur.Uid, cur.Gid), nil
+	}()
 	if err != nil {
-		panic(err)
+		return
 	}
 
-	// handle SIGINT / Ctrl-C and kill container
+	// create the container
+	c, err := cli.ContainerCreate(ctx,
+		&container.Config{
+			Image:     image,
+			OpenStdin: true,
+			StdinOnce: true,
+			User:      id,
+		},
+		&container.HostConfig{
+			AutoRemove: true,
+			Mounts: []mount.Mount{
+				{
+					Type:   mount.TypeBind,
+					Source: releases,
+					Target: "/releases",
+				},
+			},
+		}, nil, "")
+	if err != nil {
+		return
+	}
+
+	// handle SIGINT / Ctrl-C / SIGKILL and remove container before exiting
+	removeContainer := func() error { return cli.ContainerRemove(ctx, c.ID, types.ContainerRemoveOptions{Force: true}) }
 	sigint := make(chan os.Signal, 1)
 	signal.Notify(sigint, os.Interrupt)
+	signal.Notify(sigint, os.Kill)
 	go func() {
 		for range sigint {
-			cli.ContainerRemove(ctx, res.ID, types.ContainerRemoveOptions{Force: true})
+			if err := removeContainer(); err != nil {
+				fmt.Fprintln(os.Stderr, err)
+			}
 		}
 	}()
 
-	if err = cli.ContainerStart(ctx, res.ID, types.ContainerStartOptions{}); err != nil {
-		panic(err)
+	// start the container
+	if err = cli.ContainerStart(ctx, c.ID, types.ContainerStartOptions{}); err != nil {
+		removeContainer()
+		return err
 	}
 
-	hj, err := cli.ContainerAttach(ctx, res.ID, types.ContainerAttachOptions{
+	// attach to the container stdin/out/err
+	attach, err := cli.ContainerAttach(ctx, c.ID, types.ContainerAttachOptions{
 		Stream: true,
 		Stdin:  true,
 		Stderr: true,
 		Stdout: true,
 	})
 	if err != nil {
-		panic(err)
+		removeContainer()
+		return err
 	}
-	defer hj.Close()
+	defer attach.Close()
 
-	if _, err = io.Copy(hj.Conn, tar); err != nil {
-		panic(err)
+	// copy input file to stdin of the container
+	if _, err = io.Copy(attach.Conn, tar); err != nil {
+		removeContainer()
+		return err
 	}
+
+	// input is done, close
 	tar.Close()
-	hj.Conn.Close()
+	attach.Conn.Close()
 
-	out, err := cli.ContainerLogs(ctx, res.ID, types.ContainerLogsOptions{
+	// connect to the logging to follow progress
+	logs, err := cli.ContainerLogs(ctx, c.ID, types.ContainerLogsOptions{
 		ShowStderr: true,
 		ShowStdout: true,
 		Follow:     true,
 	})
 	if err != nil {
-		panic(err)
+		removeContainer()
+		return err
 	}
 
-	stdcopy.StdCopy(os.Stdout, os.Stderr, out)
+	// watch output
+	_, err = stdcopy.StdCopy(os.Stdout, os.Stderr, logs)
+	return
 
-}
-
-func main() {
-	if err := cmd.Execute(); err != nil {
-		os.Exit(1)
-	}
 }
