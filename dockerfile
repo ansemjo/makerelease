@@ -1,6 +1,7 @@
 FROM golang:1.10-alpine
 
-# install required software
+# install required and addon software
+ARG SOFTWARE
 RUN apk add --no-cache \
   bash \
   file \
@@ -8,21 +9,21 @@ RUN apk add --no-cache \
   lzip \
   make \
   upx \
-  xz
-
-# 
-WORKDIR /build
-
-# use unprivileged user
-#RUN adduser -h /build -g 'Go Releaser' -D -k /dev/null builder
-#USER builder
+  xz \
+  ${SOFTWARE}
 
 # prepare environment
 ENV \
   GOCACHE=/tmp/go-build-cache \
-  TEMPGOPATH=/tmp/go-build \
-  RELEASES=/releases
+  TEMPDIR=/tmp/makerelease \
+  RELEASES=/releases \
+  WORKDIR=/build
+
+# create workdir and release directory
+RUN mkdir -p "${RELEASES}" "${WORKDIR}" \
+  && chmod 1777 "${RELEASES}" "${WORKDIR}"
+WORKDIR /build
 
 # entrypoint script, arguments can be given during docker run
-COPY release.sh /usr/bin/release.sh
-ENTRYPOINT [ "bash", "/usr/bin/release.sh" ]
+COPY makerelease.sh /usr/bin/makerelease.sh
+ENTRYPOINT [ "bash", "/usr/bin/makerelease.sh" ]

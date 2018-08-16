@@ -1,5 +1,7 @@
 IMAGE := go-releaser
-NAME := unknown
+
+RELEASES := $(PWD)/releases
+UIDGID := $(shell echo "$$(id -u):$$(id -g)")
 
 .PHONY : default release image
 default : image
@@ -11,13 +13,17 @@ ifeq (release,$(firstword $(MAKECMDGOALS)))
   $(eval $(RELEASE_ARGS):;@:)
 endif
 
-release:
+release: $(RELEASES)
 	@docker run \
 		--init --rm -i \
 		--tmpfs /tmp:rw,nosuid,nodev,exec \
-		-v $(PWD)/releases:/releases \
+		-v $(RELEASES):/releases \
 		-e TARGETS \
+		-u $(UIDGID) \
 		$(IMAGE) $(RELEASE_ARGS)
+
+$(RELEASES):
+	mkdir -p "$@"
 
 image:
 	docker build -t $(IMAGE) .
