@@ -3,12 +3,19 @@
 # fail on errors
 set -e
 
+# do not fail on missing make target
+ignore-missing-target() { [[ $? -eq 2 ]] && true; }
+
 # printf but on stderr
 eprintf() { printf >&2 "$@"; }
 
+# timestamp in YYYY-MM-DD-UNIXEPOCH format
+TIMESTAMP=$(date --utc +%F-%s)
+mkdir -p "$RELEASEDIR/$TIMESTAMP"
+
 # echo release name
-name=${1:?release name required}
-eprintf 'releasing %s ...\n' "$name"
+NAME=${1:?release name required as argument}
+eprintf 'releasing %s %s ...\n' "$NAME" "$TIMESTAMP"
 
 # unpack source tarball, with decompression based on mime-type
 eprintf 'reading tar archive from stdin ...\n'
@@ -25,30 +32,30 @@ cat $SOURCE | (
   esac
 ) | tar x --strip-components=1
 
-# make preparations, don't fail if target does not exist
+# make any required preparations
 eprintf 'make preparations if necessary ...\n'
-make prepare-release || [[ $? -eq 2 ]] && true
+make prepare-release || ignore-missing-target
 
-# define target list
-#DEFAULT_TARGETS=$(echo {darwin,freebsd,linux,openbsd}/{386,amd64} linux/arm{,64})
-DEFAULT_TARGETS=$(echo linux/{386,amd64})
-TARGETS=${TARGETS:-$DEFAULT_TARGETS}
+# define target list in OS/ARCH format (env > make list > default)
+DEFAULT_TARGETS=$(echo {darwin,freebsd,linux,openbsd}/{386,amd64} linux/arm{,64})
+MAKE_TARGETS=$(make release-target-list) || ignore-missing-target
+TARGETS=${TARGETS:-${MAKE_TARGETS:-$DEFAULT_TARGETS}}
+eprintf 'defined release targets:\n'; eprintf ' - %s\n' $TARGETS
 
-# make targets
+# finally make targets
 for target in $TARGETS; do
 
-  eprintf 'making target: %s ...\n' $target
+  eprintf 'make target: %s ...\n' "$target"
 
-  os=$(dirname $target)
-  arch=$(basename $target)
-  file="$name-$os-$arch"
+  OS=$(dirname "$target")
+  ARCH=$(basename "$target")
+  FILE="$NAME-$OS-$ARCH"
+  OUTDIR="$RELEASEDIR/$TIMESTAMP"
+  export NAME OS ARCH FILE OUTDIR TIMESTAMP
 
-  make release \
-    GOOS=$os \
-    GOARCH=$arch \
-    TEMPDIR=$TEMPGOPATH \
-    RELEASE=$RELEASES/$file
+  make -e release
 
 done
 
-(cd $RELEASES && sha256sum * > sha256sums)
+# calculate sha256 checksums of built files
+(cd "$RELEASEDIR/$TIMESTAMP" && sha256sum * | tee sha256sums)

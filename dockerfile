@@ -14,15 +14,17 @@ RUN apk add --no-cache \
 
 # prepare environment
 ENV \
-  GOCACHE=/tmp/go-build-cache \
+  CACHEDIR=/tmp/buildcache \
+  GOCACHE=/tmp/gocache \
   TEMPDIR=/tmp/makerelease \
-  RELEASES=/releases \
-  WORKDIR=/build
+  RELEASEDIR=/releases \
+  WORKDIR=/build \
+  HOME=/build
 
 # create workdir and release directory
-RUN mkdir -p "${RELEASES}" "${WORKDIR}" \
-  && chmod 1777 "${RELEASES}" "${WORKDIR}"
-WORKDIR /build
+RUN mkdir -p "${RELEASEDIR}" "${WORKDIR}" \
+  && chmod 1777 "${RELEASEDIR}" "${WORKDIR}"
+WORKDIR ${WORKDIR}
 
 # entrypoint script, arguments can be given during docker run
 COPY makerelease.sh /usr/bin/makerelease.sh
