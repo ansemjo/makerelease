@@ -29,5 +29,6 @@ image:
 	docker build -t $(IMAGE) .
 
 makerelease: $(shell ls cli/*.go)
-	CGO_ENABLED=0 go build -o $@ cli/*
+	go generate cli/*.go
+	CGO_ENABLED=0 go build -o $@ cli/*.go
 	#upx $@
