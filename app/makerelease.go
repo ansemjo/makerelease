@@ -6,14 +6,30 @@ import (
 	"io"
 	"os"
 	"os/signal"
+	"path/filepath"
+
+	"github.com/spf13/cobra"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/api/types/mount"
 	"github.com/docker/docker/client"
 	"github.com/docker/docker/pkg/stdcopy"
 )
 
-func main() {
+var cmd = &cobra.Command{
+	Use:   "makerelease",
+	Short: "make reproducible releases",
+	Run: func(cmd *cobra.Command, args []string) {
+		demorelease()
+	},
+}
+
+func init() {
+
+}
+
+func demorelease() {
 
 	ctx := context.Background()
 
@@ -31,12 +47,21 @@ func main() {
 		Force: true,
 	})
 
+	releases, _ := filepath.Abs("releases")
+
 	res, err := cli.ContainerCreate(ctx, &container.Config{
 		Image:     "go-releaser",
 		OpenStdin: true,
 		StdinOnce: true,
 	}, &container.HostConfig{
 		AutoRemove: true,
+		Mounts: []mount.Mount{
+			{
+				Type:   mount.TypeBind,
+				Source: releases,
+				Target: "/releases",
+			},
+		},
 	}, nil, "rel")
 	if err != nil {
 		panic(err)
@@ -81,4 +106,10 @@ func main() {
 
 	stdcopy.StdCopy(os.Stdout, os.Stderr, out)
 
+}
+
+func main() {
+	if err := cmd.Execute(); err != nil {
+		os.Exit(1)
+	}
 }
