@@ -5,10 +5,12 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"os/signal"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/client"
+	"github.com/docker/docker/pkg/stdcopy"
 )
 
 func main() {
@@ -40,6 +42,14 @@ func main() {
 		panic(err)
 	}
 
+	sigint := make(chan os.Signal, 1)
+	signal.Notify(sigint, os.Interrupt)
+	go func() {
+		for range sigint {
+			cli.ContainerRemove(ctx, res.ID, types.ContainerRemoveOptions{Force: true})
+		}
+	}()
+
 	if err = cli.ContainerStart(ctx, res.ID, types.ContainerStartOptions{}); err != nil {
 		panic(err)
 	}
@@ -47,6 +57,8 @@ func main() {
 	hj, err := cli.ContainerAttach(ctx, res.ID, types.ContainerAttachOptions{
 		Stream: true,
 		Stdin:  true,
+		Stderr: true,
+		Stdout: true,
 	})
 	if err != nil {
 		panic(err)
@@ -56,7 +68,17 @@ func main() {
 	if _, err = io.Copy(hj.Conn, aenker); err != nil {
 		panic(err)
 	}
-
 	hj.Conn.Close()
+
+	out, err := cli.ContainerLogs(ctx, res.ID, types.ContainerLogsOptions{
+		ShowStderr: true,
+		ShowStdout: true,
+		Follow:     true,
+	})
+	if err != nil {
+		panic(err)
+	}
+
+	stdcopy.StdCopy(os.Stdout, os.Stderr, out)
 
 }
