@@ -6,9 +6,6 @@ import (
 	"io"
 	"os"
 	"os/signal"
-	"path/filepath"
-
-	"github.com/spf13/cobra"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
@@ -17,42 +14,27 @@ import (
 	"github.com/docker/docker/pkg/stdcopy"
 )
 
-var cmd = &cobra.Command{
-	Use:   "makerelease",
-	Short: "make reproducible releases",
-	Run: func(cmd *cobra.Command, args []string) {
-		demorelease()
-	},
-}
-
-func init() {
-
-}
-
-func demorelease() {
-
-	ctx := context.Background()
-
-	cli, err := client.NewClientWithOpts()
+// create default client and negotiate api version
+func newDockerClient() (cli *client.Client, ctx context.Context, err error) {
+	ctx = context.Background()
+	cli, err = client.NewClientWithOpts()
 	if err != nil {
-		panic(err)
+		return
 	}
-
 	cli.NegotiateAPIVersion(ctx)
 	fmt.Println("negotiated api version", cli.ClientVersion())
+	return
+}
 
-	aenker, _ := os.Open("./aenker.tar")
+func makeRelease(tar io.ReadCloser, releases string) {
 
-	cli.ContainerRemove(ctx, "rel", types.ContainerRemoveOptions{
-		Force: true,
-	})
-
-	releases, _ := filepath.Abs("releases")
+	cli, ctx, err := newDockerClient()
 
 	res, err := cli.ContainerCreate(ctx, &container.Config{
 		Image:     "go-releaser",
 		OpenStdin: true,
 		StdinOnce: true,
+		User:      "1000:100",
 	}, &container.HostConfig{
 		AutoRemove: true,
 		Mounts: []mount.Mount{
@@ -62,11 +44,12 @@ func demorelease() {
 				Target: "/releases",
 			},
 		},
-	}, nil, "rel")
+	}, nil, "")
 	if err != nil {
 		panic(err)
 	}
 
+	// handle SIGINT / Ctrl-C and kill container
 	sigint := make(chan os.Signal, 1)
 	signal.Notify(sigint, os.Interrupt)
 	go func() {
@@ -90,9 +73,10 @@ func demorelease() {
 	}
 	defer hj.Close()
 
-	if _, err = io.Copy(hj.Conn, aenker); err != nil {
+	if _, err = io.Copy(hj.Conn, tar); err != nil {
 		panic(err)
 	}
+	tar.Close()
 	hj.Conn.Close()
 
 	out, err := cli.ContainerLogs(ctx, res.ID, types.ContainerLogsOptions{
