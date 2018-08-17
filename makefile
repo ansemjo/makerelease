@@ -30,8 +30,6 @@ self: image
 prepare-release release finish-release:
 	make -C cli $@
 
-# mkr: $(shell ls cli/*.go container/*)
-# 	packr
-# 	CGO_ENABLED=0 go build -o $@ cli/*.go
-# 	packr clean
-# 	upx $@
+# requires Go 1.11+
+mkr: prepare-release
+	cd cli && CGO_ENABLED=0 packr build -o ../$@
