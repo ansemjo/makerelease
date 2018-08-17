@@ -3,8 +3,8 @@ IMAGE := ansemjo/makerelease
 RELEASES := $(PWD)/release
 UIDGID := $(shell echo "$$(id -u):$$(id -g)")
 
-.PHONY : default image install dockerized-release prepare-release release finish-release
-default : self
+.PHONY : default image install dockerized-release prepare-release release finish-release self
+default : mkr
 
 # create output directory
 $(RELEASES):
@@ -35,6 +35,6 @@ mkr: prepare-release
 	cd cli && CGO_ENABLED=0 packr build -o ../$@
 
 # install
-PREFIX := ~/.local
+PREFIX := $(shell [ $$(id -u) -eq 0 ] && echo /usr/local || echo ~/.local)
 install: mkr
 	install -m 755 $< $(PREFIX)/bin
