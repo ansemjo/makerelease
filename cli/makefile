@@ -13,5 +13,5 @@ mkrelease:
 		packr build -o $(RELEASEDIR)/mkr-$(OS)-$(ARCH)$(EXT)
 
 mkrelease-finish:
-	upx $(RELEASEDIR)/*
+	upx $(RELEASEDIR)/* || true
 	cd $(RELEASEDIR) && sha256sum * | tee sha256sums
