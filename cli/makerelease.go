@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/signal"
 	"os/user"
+	"strings"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
@@ -48,6 +49,10 @@ Build from a downloaded source archive:
 Pack a local code directory and pipe it directly:
   tar c -C /path/to/code ./ | mkr rl -d output`,
 	PreRunE: func(cmd *cobra.Command, args []string) (err error) {
+		err = checkTargetFlag(cmd)
+		if err != nil {
+			return
+		}
 		err = checkOutDirFlag(cmd)
 		if err != nil {
 			return
@@ -66,6 +71,7 @@ func init() {
 	addOutdirFlag(makeReleaseCmd)
 	addInfileFlag(makeReleaseCmd)
 	addTagFlag(makeReleaseCmd)
+	addTargetsFlag(makeReleaseCmd)
 }
 
 // make a release from the sourcecode in the source tarball
@@ -89,6 +95,13 @@ func makeRelease(tar io.ReadCloser, releases string) (err error) {
 		return
 	}
 
+	// assemble container environment
+	var env []string
+	if len(targets) > 0 {
+		tg := fmt.Sprintf("TARGETS=%s", strings.Join(targets, " "))
+		env = append(env, tg)
+	}
+
 	// create the container
 	c, err := cli.ContainerCreate(ctx,
 		&container.Config{
@@ -96,6 +109,7 @@ func makeRelease(tar io.ReadCloser, releases string) (err error) {
 			OpenStdin: true,
 			StdinOnce: true,
 			User:      id,
+			Env:       env,
 		},
 		&container.HostConfig{
 			AutoRemove: true,
