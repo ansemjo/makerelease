@@ -2,5 +2,5 @@
 release/
 **/vendor/
 **/assets/
-makerelease
+mkr
 TODO
