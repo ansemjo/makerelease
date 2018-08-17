@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/spf13/cobra"
@@ -17,8 +18,15 @@ var cmd = &cobra.Command{
 		}
 		return checkInFileFlag(cmd)
 	},
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		return makeRelease(infile, outdir)
+	Run: func(cmd *cobra.Command, args []string) {
+		err := makeRelease(infile, outdir)
+		if err != nil {
+			if infile != nil {
+				infile.Close()
+			}
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
 	},
 }
 

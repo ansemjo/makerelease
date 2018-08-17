@@ -4,7 +4,6 @@
 package main
 
 import (
-	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -16,9 +15,9 @@ import (
 var (
 	infile        io.ReadCloser
 	infileArg     string
-	infileFlag    = []string{"src", "f", "source tarball"}
+	infileFlag    = []string{"src", "f", "", "source tarball"}
 	addInfileFlag = func(cmd *cobra.Command) {
-		cmd.Flags().StringVarP(&infileArg, infileFlag[0], infileFlag[1], "", infileFlag[2])
+		cmd.Flags().StringVarP(&infileArg, infileFlag[0], infileFlag[1], infileFlag[2], infileFlag[3])
 	}
 )
 
@@ -40,25 +39,18 @@ func checkInFileFlag(cmd *cobra.Command) (err error) {
 var (
 	outdir        string
 	outdirArg     string
-	outdirFlag    = []string{"dir", "d", "release directory"}
+	outdirFlag    = []string{"dir", "d", "release", "release directory"}
 	addOutdirFlag = func(cmd *cobra.Command) {
-		cmd.Flags().StringVarP(&outdirArg, outdirFlag[0], outdirFlag[1], "releases", outdirFlag[2])
+		cmd.Flags().StringVarP(&outdirArg, outdirFlag[0], outdirFlag[1], outdirFlag[2], outdirFlag[3])
 	}
 )
 
-// check that the output directory exists and transform to absolute path
+// create output directory and transform to absolute path
 func checkOutDirFlag(cmd *cobra.Command) (err error) {
-	stat, err := os.Stat(outdirArg)
+	err = os.MkdirAll(outdirArg, 0755)
 	if err != nil {
-		return err
+		return
 	}
-	if !stat.IsDir() {
-		return fmt.Errorf("%s: not a directory", outdirArg)
-	}
-	absolute, err := filepath.Abs(outdirArg)
-	if err != nil {
-		return err
-	}
-	outdir = absolute
+	outdir, err = filepath.Abs(outdirArg)
 	return
 }

@@ -1,6 +1,6 @@
 IMAGE := go-releaser
 
-RELEASES := $(PWD)/releases
+RELEASES := $(PWD)/release
 UIDGID := $(shell echo "$$(id -u):$$(id -g)")
 
 .PHONY : default release image
