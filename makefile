@@ -32,14 +32,15 @@ release-target-list:
 
 release:
 	cd cli && \
-	GOPATH=$$PWD GOOS=$(OS) GOARCH=$(ARCH) \
+	CGO_ENABLED=0 GOPATH=$$PWD GOOS=$(OS) GOARCH=$(ARCH) \
 	go build -o $(RELEASEDIR)/mkr-$(OS)-$(ARCH)
 
 finish-release:
 	cd $(RELEASEDIR) && sha256sum * | tee sha256sums
 
 self: image $(RELEASES)
-	tar c . | make releases
+	tar cf sources.tar --exclude=sources.tar --exclude=.git .
+	make releases < sources.tar
 
 image:
 	docker build -t $(IMAGE) container/

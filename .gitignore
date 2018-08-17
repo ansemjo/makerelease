@@ -2,5 +2,6 @@
 release/
 **/vendor/
 **/assets/
+sources.tar
 mkr
 TODO
