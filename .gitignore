@@ -1,4 +1,6 @@
 *.tar*
-releases/
+release/
 **/vendor/
+**/assets/
 makerelease
+TODO
