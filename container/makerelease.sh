@@ -3,9 +3,6 @@
 # fail on errors
 set -e
 
-# do not fail on missing make target
-ignore-missing-target() { [[ $? -eq 2 ]] && true || false; }
-
 # timestamp in YYYY-MM-DD-UNIXEPOCH format
 export TIMESTAMP=$(date --utc +%F-%s)
 export RELEASEDIR="$RELEASEDIR/$TIMESTAMP"
@@ -29,11 +26,11 @@ cat $SOURCE | (
 
 # make any required preparations
 printf 'make preparations if necessary ...\n'
-make -e prepare-release || ignore-missing-target
+make -e prepare-release
 
 # define target list in OS/ARCH format (env > make list > default)
 DEFAULT_TARGETS=$(echo {darwin,freebsd,linux,openbsd}/{386,amd64} linux/arm{,64})
-MAKE_TARGETS=$(make -e release-target-list) || ignore-missing-target
+MAKE_TARGETS=$(make -e release-target-list) || true
 TARGETS=${TARGETS:-${MAKE_TARGETS:-$DEFAULT_TARGETS}}
 printf 'defined release targets:\n'; printf ' - %s\n' $TARGETS
 
@@ -52,4 +49,4 @@ done
 
 # finish up release, e.g. calculate checksums
 printf 'finish up release ...\n'
-make -e finish-release || ignore-missing-target
+make -e finish-release
