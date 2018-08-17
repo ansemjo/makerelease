@@ -9,6 +9,7 @@ RUN apk add --no-cache \
   git \
   lzip \
   make \
+  musl-dev \
   upx \
   xz \
   ${SOFTWARE}
