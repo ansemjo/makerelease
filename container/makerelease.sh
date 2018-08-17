@@ -4,7 +4,7 @@
 set -e
 
 # do not fail on missing make target
-ignore-missing-target() { [[ $? -eq 2 ]] && true; }
+ignore-missing-target() { [[ $? -eq 2 ]] && true || false; }
 
 # timestamp in YYYY-MM-DD-UNIXEPOCH format
 export TIMESTAMP=$(date --utc +%F-%s)
@@ -52,4 +52,4 @@ done
 
 # finish up release, e.g. calculate checksums
 printf 'finish up release ...\n'
-make -e finish-release
+make -e finish-release || ignore-missing-target
