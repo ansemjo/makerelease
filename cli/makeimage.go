@@ -1,32 +1,27 @@
 package main
 
-//go:generate bash -c "mkdir -p assets && tar cvf assets/context.tar -C ../ dockerfile makerelease.sh"
-
 import (
 	"fmt"
 	"os"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/pkg/jsonmessage"
-	"github.com/gobuffalo/packr"
 	"github.com/spf13/cobra"
 )
 
+// simple command to generate the build image
 var imagegen = &cobra.Command{
 	Use: "build",
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		return buildImage()
+	Run: func(cmd *cobra.Command, args []string) {
+		err := buildImage()
+		handleError(err)
 	},
 }
 
-var box packr.Box
-
 func init() {
-
 	cmd.AddCommand(imagegen)
-
-	box = packr.NewBox("assets")
-
+	imagegen.Flags().SortFlags = false
+	addTagFlag(imagegen)
 }
 
 func buildImage() (err error) {
@@ -37,13 +32,13 @@ func buildImage() (err error) {
 	}
 
 	// open embedded build context
-	dockercontext, err := box.Open("context.tar")
+	buildcontext, err := assets.Open("context.tar")
 	if err != nil {
 		return
 	}
 
-	build, err := cli.ImageBuild(ctx, dockercontext, types.ImageBuildOptions{
-		Tags: []string{image},
+	build, err := cli.ImageBuild(ctx, buildcontext, types.ImageBuildOptions{
+		Tags: []string{tag},
 	})
 	if err != nil {
 		return

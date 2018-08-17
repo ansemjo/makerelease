@@ -13,8 +13,6 @@ import (
 	"github.com/docker/docker/pkg/stdcopy"
 )
 
-const image = "go-releaser"
-
 // make a release from the sourcecode in the source tarball
 func makeRelease(tar io.ReadCloser, releases string) (err error) {
 
@@ -39,7 +37,7 @@ func makeRelease(tar io.ReadCloser, releases string) (err error) {
 	// create the container
 	c, err := cli.ContainerCreate(ctx,
 		&container.Config{
-			Image:     image,
+			Image:     tag,
 			OpenStdin: true,
 			StdinOnce: true,
 			User:      id,

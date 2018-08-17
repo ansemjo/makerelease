@@ -20,13 +20,7 @@ var cmd = &cobra.Command{
 	},
 	Run: func(cmd *cobra.Command, args []string) {
 		err := makeRelease(infile, outdir)
-		if err != nil {
-			if infile != nil {
-				infile.Close()
-			}
-			fmt.Fprintln(os.Stderr, err)
-			os.Exit(1)
-		}
+		handleError(err)
 	},
 }
 
@@ -34,10 +28,26 @@ func init() {
 	cmd.Flags().SortFlags = false
 	addOutdirFlag(cmd)
 	addInfileFlag(cmd)
+	addTagFlag(cmd)
 }
 
 func main() {
 	if err := cmd.Execute(); err != nil {
 		os.Exit(1)
+	}
+}
+
+func handleError(err error) {
+	if err != nil {
+
+		// close open files
+		if infile != nil {
+			infile.Close()
+		}
+
+		// print error and exit
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+
 	}
 }
