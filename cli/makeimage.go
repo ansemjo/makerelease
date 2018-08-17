@@ -26,6 +26,7 @@ func init() {
 
 func buildImage() (err error) {
 
+	// connect to docker daemon
 	cli, ctx, err := newDockerClient()
 	if err != nil {
 		return
@@ -37,6 +38,7 @@ func buildImage() (err error) {
 		return
 	}
 
+	// begin building image
 	build, err := cli.ImageBuild(ctx, buildcontext, types.ImageBuildOptions{
 		Tags: []string{tag},
 	})
@@ -45,7 +47,7 @@ func buildImage() (err error) {
 	}
 	defer build.Body.Close()
 
-	// print message stream to output
+	// print message stream to output and hadle errors
 	err = jsonmessage.DisplayJSONMessagesStream(build.Body, os.Stdout, os.Stdout.Fd(), true, nil)
 	if err != nil {
 		if jerr, ok := err.(*jsonmessage.JSONError); ok {

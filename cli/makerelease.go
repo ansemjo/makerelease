@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -63,9 +64,11 @@ func makeRelease(tar io.ReadCloser, releases string) (err error) {
 	signal.Notify(sigint, os.Kill)
 	go func() {
 		for range sigint {
+			fmt.Fprintln(os.Stderr, "cancel")
 			if err := removeContainer(); err != nil {
 				fmt.Fprintln(os.Stderr, err)
 			}
+			os.Exit(1)
 		}
 	}()
 
@@ -111,6 +114,21 @@ func makeRelease(tar io.ReadCloser, releases string) (err error) {
 
 	// watch output
 	_, err = stdcopy.StdCopy(os.Stdout, os.Stderr, logs)
-	return
+	if err != nil {
+		return
+	}
+
+	// inspect container state
+	state, err := cli.ContainerInspect(ctx, c.ID)
+	if err != nil {
+		return
+	}
+
+	// and return any errors
+	if state.State.ExitCode != 0 {
+		return errors.New(state.State.Error)
+	}
+
+	return cli.Close()
 
 }
