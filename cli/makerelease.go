@@ -111,6 +111,9 @@ func makeRelease(tar io.ReadCloser, releases string) (err error) {
 		return
 	}
 
+	// echo the container id
+	fmt.Println("created container", c.ID[:12])
+
 	// handle SIGINT / Ctrl-C / SIGKILL and remove container before exiting
 	removeContainer := func() error { return cli.ContainerRemove(ctx, c.ID, types.ContainerRemoveOptions{Force: true}) }
 	sigint := make(chan os.Signal, 1)
