@@ -5,8 +5,6 @@ set -e
 
 # timestamp in YYYY-MM-DD-UNIXEPOCH format
 export TIMESTAMP=$(date --utc +%F-%s)
-export RELEASEDIR="$RELEASEDIR/$TIMESTAMP"
-mkdir -p "$RELEASEDIR"
 printf 'releasing @ %s ...\n' "$TIMESTAMP"
 
 # unpack source tarball, with decompression based on mime-type
