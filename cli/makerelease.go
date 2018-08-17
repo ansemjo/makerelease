@@ -12,7 +12,61 @@ import (
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/mount"
 	"github.com/docker/docker/pkg/stdcopy"
+	"github.com/spf13/cobra"
 )
+
+// main cli command
+var makeReleaseCmd = &cobra.Command{
+	Use:     "release",
+	Aliases: []string{"rl"},
+	Short:   "build a release from source code",
+	Long: `Build a release from source code inside a Docker container.
+
+A tar archive shall be given as input, either via stdin or with the '-f'
+flag. It can be compressed with gzip, bzip2, lzip or xz. The first component
+will be stripped during extraction and the resulting directory will be the
+root for all build operations. Archives downloaded from online repositories
+like GitHub or GitLab often conform to this format.
+
+In this build root a Makefile is expected with at least the targets
+'prepare-release', 'release' and 'finish-release'. During the build the
+following environment variables can and should be used:
+
+  RELEASEDIR  - the output directory for finished files
+  WORKDIR     - the build root with extracted sources
+  OS          - the target operating system (linux, freebsd, darwin, ...)
+  ARCH        - the target architecture (amd64, 386, arm, ...)
+
+The latter two are only available for the 'release' target.`,
+	Example: `
+Create the Docker image locally first:
+  mkr image
+
+Build from a downloaded source archive:
+  mkr rl -f master.tar.gz
+
+Pack a local code directory and pipe it directly:
+  tar c -C /path/to/code ./ | mkr rl -d output`,
+	PreRunE: func(cmd *cobra.Command, args []string) (err error) {
+		err = checkOutDirFlag(cmd)
+		if err != nil {
+			return
+		}
+		return checkInFileFlag(cmd)
+	},
+	Run: func(cmd *cobra.Command, args []string) {
+		err := makeRelease(infile, outdir)
+		handleError(err)
+	},
+}
+
+func init() {
+	cmd.AddCommand(makeReleaseCmd)
+	makeReleaseCmd.Flags().SortFlags = false
+	addOutdirFlag(makeReleaseCmd)
+	addInfileFlag(makeReleaseCmd)
+	addTagFlag(makeReleaseCmd)
+}
 
 // make a release from the sourcecode in the source tarball
 func makeRelease(tar io.ReadCloser, releases string) (err error) {

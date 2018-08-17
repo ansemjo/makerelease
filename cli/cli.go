@@ -9,26 +9,11 @@ import (
 
 // main cli command
 var cmd = &cobra.Command{
-	Use:   "makerelease",
-	Short: "Make reproducible releases by building them in a container.",
-	PreRunE: func(cmd *cobra.Command, args []string) (err error) {
-		err = checkOutDirFlag(cmd)
-		if err != nil {
-			return
-		}
-		return checkInFileFlag(cmd)
-	},
-	Run: func(cmd *cobra.Command, args []string) {
-		err := makeRelease(infile, outdir)
-		handleError(err)
-	},
+	Use: "mkr",
 }
 
 func init() {
-	cmd.Flags().SortFlags = false
-	addOutdirFlag(cmd)
-	addInfileFlag(cmd)
-	addTagFlag(cmd)
+	cobra.EnableCommandSorting = false
 }
 
 func main() {

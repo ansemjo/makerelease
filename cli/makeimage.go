@@ -10,8 +10,11 @@ import (
 )
 
 // simple command to generate the build image
-var imagegen = &cobra.Command{
-	Use: "build",
+var buildImageCmd = &cobra.Command{
+	Use:     "image",
+	Aliases: []string{"im"},
+	Short:   "create the required docker image",
+	Long:    "Build the required Docker image from the embedded context files locally.",
 	Run: func(cmd *cobra.Command, args []string) {
 		err := buildImage()
 		handleError(err)
@@ -19,9 +22,9 @@ var imagegen = &cobra.Command{
 }
 
 func init() {
-	cmd.AddCommand(imagegen)
-	imagegen.Flags().SortFlags = false
-	addTagFlag(imagegen)
+	cmd.AddCommand(buildImageCmd)
+	buildImageCmd.Flags().SortFlags = false
+	addTagFlag(buildImageCmd)
 }
 
 func buildImage() (err error) {
