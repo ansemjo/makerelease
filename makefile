@@ -27,11 +27,11 @@ self: image
 	tar c ./makefile ./container ./cli | make dockerized-release
 
 # delegate to submakefile
-prepare-release release finish-release:
+mkrelease-prepare mkrelease mkrelease-finish:
 	make -C cli $@
 
 # requires Go 1.11+
-mkr: prepare-release
+mkr: mkrelease-prepare
 	cd cli && CGO_ENABLED=0 packr build -o ../$@
 
 # install

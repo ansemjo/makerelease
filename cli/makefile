@@ -1,15 +1,15 @@
 # this makefile requires Go 1.11+
-.PHONY : prepare-release release finish-release
+.PHONY : mkrelease-prepare mkrelease mkrelease-finish
 
-prepare-release:
+mkrelease-prepare:
 	mkdir -p assets
 	tar cf assets/context.tar -C ../container/ .
 	go get github.com/gobuffalo/packr/...
 	go mod vendor
 
-release:
+mkrelease:
 	CGO_ENABLED=0 GOOS=$(OS) GOARCH=$(ARCH) \
 		packr build -o $(RELEASEDIR)/mkr-$(OS)-$(ARCH)
 
-finish-release:
+mkrelease-finish:
 	cd $(RELEASEDIR) && sha256sum * | tee sha256sums

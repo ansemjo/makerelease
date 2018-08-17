@@ -5,7 +5,7 @@ set -e
 
 # timestamp in YYYY-MM-DD-UNIXEPOCH format
 export TIMESTAMP=$(date --utc +%F-%s)
-printf 'releasing @ %s ...\n' "$TIMESTAMP"
+printf 'starting makerelease.sh %s ...\n' "$TIMESTAMP"
 
 # unpack source tarball, with decompression based on mime-type
 printf 'reading tar archive from stdin ...\n'
@@ -23,12 +23,11 @@ cat $SOURCE | (
 ) | tar x --strip-components=1
 
 # make any required preparations
-printf 'make preparations if necessary ...\n'
-make -e prepare-release
+printf 'prepare release ...\n'
+make -e mkrelease-prepare
 
 # define target list in OS/ARCH format (env > make list > default)
-DEFAULT_TARGETS=$(echo {darwin,freebsd,linux,openbsd}/{386,amd64} linux/arm{,64})
-MAKE_TARGETS=$(make -e release-target-list) || true
+MAKE_TARGETS=$(make -e mkrelease-targets) || true
 TARGETS=${TARGETS:-${MAKE_TARGETS:-$DEFAULT_TARGETS}}
 printf 'defined release targets:\n'; printf ' - %s\n' $TARGETS
 
@@ -41,10 +40,10 @@ for target in $TARGETS; do
   ARCH=$(basename "$target")
   export OS ARCH
 
-  make -e release
+  make -e mkrelease
 
 done
 
 # finish up release, e.g. calculate checksums
 printf 'finish up release ...\n'
-make -e finish-release
+make -e mkrelease-finish
