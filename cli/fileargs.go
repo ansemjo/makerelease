@@ -4,18 +4,20 @@
 package main
 
 import (
+	"errors"
 	"io"
 	"os"
 	"path/filepath"
 
 	"github.com/spf13/cobra"
+	"golang.org/x/crypto/ssh/terminal"
 )
 
 // input: source tarball
 var (
 	infile        io.ReadCloser
 	infileArg     string
-	infileFlag    = []string{"src", "f", "", "source tarball"}
+	infileFlag    = []string{"src", "f", "", "source tarball (default stdin)"}
 	addInfileFlag = func(cmd *cobra.Command) {
 		cmd.Flags().StringVarP(&infileArg, infileFlag[0], infileFlag[1], infileFlag[2], infileFlag[3])
 	}
@@ -24,13 +26,15 @@ var (
 // open the input file, use stdin if none given
 func checkInFileFlag(cmd *cobra.Command) (err error) {
 	if cmd.Flag(infileFlag[0]).Changed && infileArg != "-" {
-		f, err := os.Open(infileArg)
-		if err != nil {
-			return err
-		}
-		infile = f
+		infile, err = os.Open(infileArg)
 	} else {
 		infile = os.Stdin
+	}
+	if err != nil {
+		return
+	}
+	if terminal.IsTerminal(int(infile.(*os.File).Fd())) {
+		return errors.New("refusing to read tar from tty")
 	}
 	return
 }
