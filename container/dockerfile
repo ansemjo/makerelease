@@ -10,6 +10,7 @@ RUN apk add --no-cache \
   lzip \
   make \
   musl-dev \
+  tar \
   upx \
   xz \
   ${SOFTWARE}

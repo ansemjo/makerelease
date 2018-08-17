@@ -3,7 +3,7 @@
 
 mkrelease-prepare:
 	mkdir -p assets
-	tar cf assets/context.tar -C ../container/ .
+	(cd ../container && tar c --mtime=1970-01-01 *) > assets/context.tar
 	go get github.com/gobuffalo/packr/...
 	go mod vendor
 
