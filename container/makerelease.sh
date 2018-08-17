@@ -27,6 +27,8 @@ printf 'prepare release ...\n'
 make -e mkrelease-prepare
 
 # define target list in OS/ARCH format (env > make list > default)
+DEFAULT_TARGETS=$(echo {linux,darwin,{free,net,open}bsd,plan9,windows}/{386,amd64} \
+  {solaris,dragonfly}/amd64 {linux,darwin}/arm{,64} {free,net,open}bsd/arm )
 MAKE_TARGETS=$(make -e mkrelease-targets) || true
 TARGETS=${TARGETS:-${MAKE_TARGETS:-$DEFAULT_TARGETS}}
 printf 'defined release targets:\n'; printf ' - %s\n' $TARGETS
