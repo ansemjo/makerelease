@@ -30,5 +30,7 @@ image:
 
 makerelease: $(shell ls cli/*.go)
 	go generate cli/*.go
+	packr
 	CGO_ENABLED=0 go build -o $@ cli/*.go
+	packr clean
 	#upx $@
