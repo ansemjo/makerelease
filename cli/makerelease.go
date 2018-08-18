@@ -30,8 +30,8 @@ root for all build operations. Archives downloaded from online repositories
 like GitHub or GitLab often conform to this format.
 
 In this build root a Makefile is expected with at least the targets
-'prepare-release', 'release' and 'finish-release'. During the build the
-following environment variables can and should be used:
+'mkrelease-prepare', 'mkrelease' and 'mkrelease-finish'. During the build
+the following environment variables can and should be used:
 
   RELEASEDIR  - the output directory for finished files
   WORKDIR     - the build root with extracted sources
