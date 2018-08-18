@@ -85,7 +85,16 @@ And not directly from within the directory:
 /path/to/source/code$ tar cf ~/archive.tar cli/ container/ makefile [...]
 ```
 
-### example
+### docker daemon
+
+You must be able to connect to a Docker daemon with default or current environment settings. That
+means either adding your user to the `docker` group if you are not root (this is a
+[security risk](https://docs.docker.com/install/linux/linux-postinstall/#manage-docker-as-a-non-root-user)
+though) or configuring
+[environment variables](https://docs.docker.com/engine/reference/commandline/cli/#environment-variables)
+beforehand.
+
+### example makefile
 
 For an example, take a look at this projects own [makefile](cli/makefile).
 
