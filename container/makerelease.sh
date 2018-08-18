@@ -1,3 +1,6 @@
+# Copyright (c) 2018 Anton Semjonov
+# Licensed under the MIT License
+
 #!/usr/bin/env bash
 
 # fail on errors

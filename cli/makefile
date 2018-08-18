@@ -1,3 +1,6 @@
+# Copyright (c) 2018 Anton Semjonov
+# Licensed under the MIT License
+
 # this makefile requires Go 1.11+
 .PHONY : mkrelease-prepare mkrelease mkrelease-finish
 

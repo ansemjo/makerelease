@@ -1,3 +1,6 @@
+# Copyright (c) 2018 Anton Semjonov
+# Licensed under the MIT License
+
 IMAGE := ansemjo/makerelease
 
 RELEASES := $(PWD)/release
