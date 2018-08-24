@@ -1,7 +1,4 @@
-*.tar*
 release/
 **/vendor/
-**/assets/
-sources.tar
+*.tar*
 mkr
-TODO

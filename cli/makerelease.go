@@ -4,18 +4,7 @@
 package main
 
 import (
-	"errors"
-	"fmt"
-	"io"
-	"os"
-	"os/signal"
-	"os/user"
-	"strings"
-	"time"
-
-	"github.com/docker/docker/api/types"
-	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/pkg/stdcopy"
+	"github.com/ansemjo/makerelease/cli/docker"
 	"github.com/spf13/cobra"
 )
 
@@ -50,7 +39,8 @@ Build from a downloaded source archive:
   mkr rl -f master.tar.gz
 
 Pack a local code directory and pipe it directly:
-  tar c -C /path/to/code ./ | mkr rl -d output`,
+	tar c -C /path/to/code ./ | mkr rl -d output`,
+
 	PreRunE: func(cmd *cobra.Command, args []string) (err error) {
 		err = checkTargetFlag(cmd)
 		if err != nil {
@@ -62,9 +52,18 @@ Pack a local code directory and pipe it directly:
 		}
 		return checkInFileFlag(cmd)
 	},
+
 	Run: func(cmd *cobra.Command, args []string) {
-		err := makeRelease(infile, outdir)
+
+		cfg := docker.MakeReleaseConfig{Targets: targets, Image: tag}
+		release, err := docker.MakeRelease(infile, cfg)
 		handleError(err)
+
+		err = Untar(outdir, release, "releases/")
+		if err != nil {
+			return
+		}
+
 	},
 }
 
@@ -75,143 +74,4 @@ func init() {
 	addInfileFlag(makeReleaseCmd)
 	addTagFlag(makeReleaseCmd)
 	addTargetsFlag(makeReleaseCmd)
-}
-
-// make a release from the sourcecode in the source tarball
-func makeRelease(sourcecode io.ReadCloser, releases string) (err error) {
-
-	// connect to docker daemon
-	cli, ctx, err := newDockerClient()
-	if err != nil {
-		return
-	}
-
-	// get current user as UID:GID string
-	id, err := func() (string, error) {
-		cur, err := user.Current()
-		if err != nil {
-			return "", err
-		}
-		return fmt.Sprintf("%s:%s", cur.Uid, cur.Gid), nil
-	}()
-	if err != nil {
-		return
-	}
-
-	// assemble container environment
-	var env []string
-	if len(targets) > 0 {
-		tg := fmt.Sprintf("TARGETS=%s", strings.Join(targets, " "))
-		env = append(env, tg)
-	}
-
-	// create the container
-	c, err := cli.ContainerCreate(ctx,
-		&container.Config{
-			Image:     tag,
-			OpenStdin: true,
-			StdinOnce: true,
-			User:      id,
-			Env:       env,
-		},
-		&container.HostConfig{}, nil, "")
-	if err != nil {
-		return
-	}
-
-	// echo the container id
-	fmt.Println("created container", c.ID[:12])
-
-	// handle SIGINT / Ctrl-C / SIGKILL and remove container before exiting
-	removeContainer := func() error { return cli.ContainerRemove(ctx, c.ID, types.ContainerRemoveOptions{Force: true}) }
-	sigint := make(chan os.Signal, 1)
-	signal.Notify(sigint, os.Interrupt)
-	signal.Notify(sigint, os.Kill)
-	go func() {
-		for range sigint {
-			fmt.Fprintln(os.Stderr, "cancel")
-			if err := removeContainer(); err != nil {
-				fmt.Fprintln(os.Stderr, err)
-			}
-			os.Exit(1)
-		}
-	}()
-
-	// start the container
-	if err = cli.ContainerStart(ctx, c.ID, types.ContainerStartOptions{}); err != nil {
-		removeContainer()
-		return err
-	}
-
-	// attach to the container stdin/out/err
-	attach, err := cli.ContainerAttach(ctx, c.ID, types.ContainerAttachOptions{
-		Stream: true,
-		Stdin:  true,
-		Stderr: true,
-		Stdout: true,
-	})
-	if err != nil {
-		removeContainer()
-		return err
-	}
-	defer attach.Close()
-
-	// copy input file to stdin of the container
-	if _, err = io.Copy(attach.Conn, sourcecode); err != nil {
-		removeContainer()
-		return err
-	}
-
-	// input is done, close
-	sourcecode.Close()
-	attach.Conn.Close()
-
-	// connect to the logging to follow progress
-	logs, err := cli.ContainerLogs(ctx, c.ID, types.ContainerLogsOptions{
-		ShowStderr: true,
-		ShowStdout: true,
-		Follow:     true,
-	})
-	if err != nil {
-		removeContainer()
-		return err
-	}
-
-	// watch output
-	_, err = stdcopy.StdCopy(os.Stdout, os.Stderr, logs)
-	if err != nil {
-		return
-	}
-
-	time.Sleep(3 * time.Second)
-
-	// inspect container state
-	state, err := cli.ContainerInspect(ctx, c.ID)
-	if err != nil {
-		return
-	}
-
-	// and return any errors
-	if state.State.ExitCode != 0 {
-		return errors.New(state.State.Error)
-	}
-
-	// copy release files
-	releaseTar, _, err := cli.CopyFromContainer(ctx, c.ID, "/releases/")
-	if err != nil {
-		return
-	}
-	defer releaseTar.Close()
-
-	err = Untar(outdir, releaseTar, "releases/")
-	if err != nil {
-		return
-	}
-
-	err = removeContainer()
-	if err != nil {
-		return
-	}
-	return cli.Close()
-
 }
