@@ -11,10 +11,10 @@ import (
 	"os/signal"
 	"os/user"
 	"strings"
+	"time"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/api/types/mount"
 	"github.com/docker/docker/pkg/stdcopy"
 	"github.com/spf13/cobra"
 )
@@ -78,7 +78,7 @@ func init() {
 }
 
 // make a release from the sourcecode in the source tarball
-func makeRelease(tar io.ReadCloser, releases string) (err error) {
+func makeRelease(sourcecode io.ReadCloser, releases string) (err error) {
 
 	// connect to docker daemon
 	cli, ctx, err := newDockerClient()
@@ -114,16 +114,7 @@ func makeRelease(tar io.ReadCloser, releases string) (err error) {
 			User:      id,
 			Env:       env,
 		},
-		&container.HostConfig{
-			AutoRemove: true,
-			Mounts: []mount.Mount{
-				{
-					Type:   mount.TypeBind,
-					Source: releases,
-					Target: "/releases",
-				},
-			},
-		}, nil, "")
+		&container.HostConfig{}, nil, "")
 	if err != nil {
 		return
 	}
@@ -166,13 +157,13 @@ func makeRelease(tar io.ReadCloser, releases string) (err error) {
 	defer attach.Close()
 
 	// copy input file to stdin of the container
-	if _, err = io.Copy(attach.Conn, tar); err != nil {
+	if _, err = io.Copy(attach.Conn, sourcecode); err != nil {
 		removeContainer()
 		return err
 	}
 
 	// input is done, close
-	tar.Close()
+	sourcecode.Close()
 	attach.Conn.Close()
 
 	// connect to the logging to follow progress
@@ -192,6 +183,8 @@ func makeRelease(tar io.ReadCloser, releases string) (err error) {
 		return
 	}
 
+	time.Sleep(3 * time.Second)
+
 	// inspect container state
 	state, err := cli.ContainerInspect(ctx, c.ID)
 	if err != nil {
@@ -203,6 +196,22 @@ func makeRelease(tar io.ReadCloser, releases string) (err error) {
 		return errors.New(state.State.Error)
 	}
 
+	// copy release files
+	releaseTar, _, err := cli.CopyFromContainer(ctx, c.ID, "/releases/")
+	if err != nil {
+		return
+	}
+	defer releaseTar.Close()
+
+	err = Untar(outdir, releaseTar, "releases/")
+	if err != nil {
+		return
+	}
+
+	err = removeContainer()
+	if err != nil {
+		return
+	}
 	return cli.Close()
 
 }

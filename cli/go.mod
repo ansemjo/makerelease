@@ -8,7 +8,7 @@ require (
 	github.com/docker/docker v0.7.3-0.20180817085801-a7ff19d69a90
 	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/docker/go-units v0.3.3 // indirect
-	github.com/gobuffalo/packr v1.13.2
+	github.com/gobuffalo/packr v1.13.3
 	github.com/gogo/protobuf v1.1.1 // indirect
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
 	github.com/opencontainers/go-digest v1.0.0-rc1 // indirect
