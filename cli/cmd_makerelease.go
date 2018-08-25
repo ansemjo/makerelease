@@ -5,6 +5,7 @@ package main
 
 import (
 	"github.com/ansemjo/makerelease/cli/docker"
+	"github.com/ansemjo/makerelease/cli/tar"
 	"github.com/spf13/cobra"
 )
 
@@ -59,7 +60,7 @@ Pack a local code directory and pipe it directly:
 		release, err := docker.MakeRelease(infile, cfg)
 		handleError(err)
 
-		err = Untar(outdir, release, "releases/")
+		err = tar.Untar(outdir, release, "releases/")
 		if err != nil {
 			return
 		}

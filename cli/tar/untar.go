@@ -1,7 +1,7 @@
 // from: https://gist.github.com/sdomino/635a5ed4f32c93aad131
 // Author: Steve Domino (github.com/sdomino)
 
-package main
+package tar
 
 import (
 	"archive/tar"

@@ -21,7 +21,7 @@ var buildImageCmd = &cobra.Command{
 	Use:     "image",
 	Aliases: []string{"im"},
 	Short:   "create the required docker image",
-	Long:    "Build the required Docker image from the embedded context files locally.",
+	Long:    "Build the required Docker image from embedded context files.",
 
 	Run: func(cmd *cobra.Command, args []string) {
 
