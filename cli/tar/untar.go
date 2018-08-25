@@ -16,13 +16,6 @@ import (
 // trim is stripped from the filename prefix upon extraction.
 func Untar(dst string, r io.Reader, trim string) error {
 
-	// CopyFromContainer() tars are not compressed
-	// gzr, err := gzip.NewReader(r)
-	// if err != nil {
-	// 	return err
-	// }
-	// defer gzr.Close()
-
 	tr := tar.NewReader(r)
 
 	for {

@@ -36,8 +36,6 @@ func MakeRelease(sourcecode io.Reader, config MakeReleaseConfig) (release io.Rea
 	if err != nil {
 		return
 	}
-	defer cancel()
-	defer client.Close()
 
 	// assemble container environment
 	var env []string
@@ -55,6 +53,8 @@ func MakeRelease(sourcecode io.Reader, config MakeReleaseConfig) (release io.Rea
 	}
 	maker, err := client.ContainerCreate(ctx, ContainerConfig, &container.HostConfig{}, nil, "")
 	if err != nil {
+		cancel()
+		client.Close()
 		return
 	}
 
@@ -62,24 +62,33 @@ func MakeRelease(sourcecode io.Reader, config MakeReleaseConfig) (release io.Rea
 	id := maker.ID
 	fmt.Println("created container", id[:12])
 
-	// lambda function to remove created container
-	// in a new context with a short deadline
-	cleanup := func() {
+	// lambda function to remove created container and close client
+	// connection in a new context with a short deadline
+	cleanup := func() (err error) {
 		timeout := 5 * time.Second
 		deadline, cancel := context.WithDeadline(context.Background(), time.Now().Add(timeout))
 		defer cancel()
-		err := client.ContainerRemove(deadline, id, types.ContainerRemoveOptions{Force: true})
-		if err != nil {
-			fmt.Fprintln(os.Stderr, err)
-		}
+		err = client.ContainerRemove(deadline, id, types.ContainerRemoveOptions{Force: true})
+		client.Close()
+		return
 	}
-	defer cleanup()
 
-	// handle SIGINT / Ctrl-C / SIGKILL to cancel running operations
+	// defer cleanup, but only if we have an error. otherwise
+	// do nothing and wait for cleanup upon closing the CopyCloser.
+	defer func() {
+		if err != nil {
+			clerr := cleanup()
+			if clerr != nil {
+				fmt.Fprintln(os.Stderr, clerr)
+			}
+		}
+	}()
+
+	// handle SIGINT / Ctrl-C to cancel running operations
+	// TODO: lingering goroutine?
 	go func() {
 		sigint := make(chan os.Signal, 1)
 		signal.Notify(sigint, os.Interrupt)
-		signal.Notify(sigint, os.Kill)
 		for range sigint {
 			fmt.Fprintln(os.Stderr, "ancel")
 			cancel()
@@ -109,6 +118,7 @@ func MakeRelease(sourcecode io.Reader, config MakeReleaseConfig) (release io.Rea
 		_, err = io.Copy(attach.Conn, sourcecode)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
+			cancel()
 			return
 		}
 		attach.Conn.Close()
@@ -138,7 +148,27 @@ func MakeRelease(sourcecode io.Reader, config MakeReleaseConfig) (release io.Rea
 	}
 
 	// copy release tarball
-	release, _, err = client.CopyFromContainer(ctx, id, "/releases")
-	return
+	releaseReader, _, err := client.CopyFromContainer(ctx, id, "/releases")
+	if err != nil {
+		return
+	}
 
+	// return a ~ReadCloser struct with cleanup functions
+	release = CopyCloser{releaseReader, cleanup}
+
+	return
+}
+
+// CopyCloser is a Reader returned from CopyFromContainer with
+// some cleanup procedures to close the connection etc. upon closing
+// the ReadCloser.
+type CopyCloser struct {
+	io.ReadCloser
+	cleanup func() error
+}
+
+// Close closes the ReadCloser and then runs further cleanup steps.
+func (r CopyCloser) Close() (err error) {
+	r.ReadCloser.Close()
+	return r.cleanup()
 }

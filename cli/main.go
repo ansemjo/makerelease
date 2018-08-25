@@ -13,7 +13,7 @@ import (
 // main cli command
 var cmd = &cobra.Command{
 	Use:     "mkr",
-	Version: "0.1.0",
+	Version: "0.1.1",
 }
 
 func init() {

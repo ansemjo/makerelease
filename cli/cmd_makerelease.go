@@ -4,7 +4,7 @@
 package main
 
 import (
-	"github.com/ansemjo/makerelease/cli/docker"
+	mkr "github.com/ansemjo/makerelease/cli/docker"
 	"github.com/ansemjo/makerelease/cli/tar"
 	"github.com/spf13/cobra"
 )
@@ -56,14 +56,25 @@ Pack a local code directory and pipe it directly:
 
 	Run: func(cmd *cobra.Command, args []string) {
 
-		cfg := docker.MakeReleaseConfig{Targets: targets, Image: tag}
-		release, err := docker.MakeRelease(infile, cfg)
-		handleError(err)
+		// nest the function to always run deferred cleanup
+		err := func() (err error) {
 
-		err = tar.Untar(outdir, release, "releases/")
-		if err != nil {
+			// build the release
+			cfg := mkr.MakeReleaseConfig{Targets: targets, Image: tag}
+			release, err := mkr.MakeRelease(infile, cfg)
+			if err != nil {
+				return
+			}
+			defer release.Close()
+
+			// untar to target directory, stripping the path prefix
+			err = tar.Untar(outdir, release, "releases/")
+
 			return
-		}
+		}()
+
+		// handle any error with nonzero exit code
+		handleError(err)
 
 	},
 }
