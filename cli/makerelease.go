@@ -39,7 +39,7 @@ Build from a downloaded source archive:
   mkr rl -f master.tar.gz
 
 Pack a local code directory and pipe it directly:
-	tar c -C /path/to/code ./ | mkr rl -d output`,
+  tar c -C /path/to/code ./ | mkr rl -d output`,
 
 	PreRunE: func(cmd *cobra.Command, args []string) (err error) {
 		err = checkTargetFlag(cmd)

@@ -15,13 +15,15 @@ import (
 func BuildImage(buildcontext io.Reader, image string) (err error) {
 
 	// connect to docker daemon
-	cli, ctx, err := newDockerClient()
+	client, ctx, cancel, err := newDockerClient()
 	if err != nil {
 		return
 	}
+	defer cancel()
+	defer client.Close()
 
 	// begin building image
-	build, err := cli.ImageBuild(ctx, buildcontext, types.ImageBuildOptions{Tags: []string{image}})
+	build, err := client.ImageBuild(ctx, buildcontext, types.ImageBuildOptions{Tags: []string{image}})
 	if err != nil {
 		return
 	}

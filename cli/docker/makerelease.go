@@ -4,13 +4,14 @@
 package docker
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io"
 	"os"
 	"os/signal"
-	"os/user"
 	"strings"
+	"time"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
@@ -27,27 +28,16 @@ type MakeReleaseConfig struct {
 
 // MakeRelease builds a release from a sourcecode tar with a makefile
 // specifying the mkrelease* targets. The release is returned as a
-// Reader of a tar file.
+// Reader of a tar file. The caller shall close the returned Reader.
 func MakeRelease(sourcecode io.Reader, config MakeReleaseConfig) (release io.ReadCloser, err error) {
 
 	// connect to docker daemon
-	cli, ctx, err := newDockerClient()
+	client, ctx, cancel, err := newDockerClient()
 	if err != nil {
 		return
 	}
-
-	// TODO: is this needed when we are copying the release?
-	// get current user as UID:GID string
-	id, err := func() (string, error) {
-		cur, err := user.Current()
-		if err != nil {
-			return "", err
-		}
-		return fmt.Sprintf("%s:%s", cur.Uid, cur.Gid), nil
-	}()
-	if err != nil {
-		return
-	}
+	defer cancel()
+	defer client.Close()
 
 	// assemble container environment
 	var env []string
@@ -57,105 +47,98 @@ func MakeRelease(sourcecode io.Reader, config MakeReleaseConfig) (release io.Rea
 	}
 
 	// create the container
-	c, err := cli.ContainerCreate(ctx,
-		&container.Config{
-			Image:     config.Image,
-			OpenStdin: true,
-			StdinOnce: true,
-			User:      id,
-			Env:       env,
-		},
-		&container.HostConfig{}, nil, "")
+	ContainerConfig := &container.Config{
+		Image:     config.Image,
+		Env:       env,
+		OpenStdin: true,
+		StdinOnce: true,
+	}
+	maker, err := client.ContainerCreate(ctx, ContainerConfig, &container.HostConfig{}, nil, "")
 	if err != nil {
 		return
 	}
 
 	// echo the container id
-	fmt.Println("created container", c.ID[:12])
+	id := maker.ID
+	fmt.Println("created container", id[:12])
 
-	// handle SIGINT / Ctrl-C / SIGKILL and remove container before exiting
-	removeContainer := func() error { return cli.ContainerRemove(ctx, c.ID, types.ContainerRemoveOptions{Force: true}) }
-	sigint := make(chan os.Signal, 1)
-	signal.Notify(sigint, os.Interrupt)
-	signal.Notify(sigint, os.Kill)
+	// lambda function to remove created container
+	// in a new context with a short deadline
+	cleanup := func() {
+		timeout := 5 * time.Second
+		deadline, cancel := context.WithDeadline(context.Background(), time.Now().Add(timeout))
+		defer cancel()
+		err := client.ContainerRemove(deadline, id, types.ContainerRemoveOptions{Force: true})
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err)
+		}
+	}
+	defer cleanup()
+
+	// handle SIGINT / Ctrl-C / SIGKILL to cancel running operations
 	go func() {
+		sigint := make(chan os.Signal, 1)
+		signal.Notify(sigint, os.Interrupt)
+		signal.Notify(sigint, os.Kill)
 		for range sigint {
-			fmt.Fprintln(os.Stderr, "cancel")
-			if err := removeContainer(); err != nil {
-				fmt.Fprintln(os.Stderr, err)
-			}
-			os.Exit(1)
+			fmt.Fprintln(os.Stderr, "ancel")
+			cancel()
 		}
 	}()
 
 	// start the container
-	if err = cli.ContainerStart(ctx, c.ID, types.ContainerStartOptions{}); err != nil {
-		removeContainer()
+	err = client.ContainerStart(ctx, id, types.ContainerStartOptions{})
+	if err != nil {
 		return
 	}
 
 	// attach to the container stdin/out/err
-	attach, err := cli.ContainerAttach(ctx, c.ID, types.ContainerAttachOptions{
+	attach, err := client.ContainerAttach(ctx, id, types.ContainerAttachOptions{
 		Stream: true,
 		Stdin:  true,
 		Stderr: true,
 		Stdout: true,
 	})
 	if err != nil {
-		removeContainer()
 		return
 	}
 	defer attach.Close()
 
-	// copy input file to stdin of the container
-	_, err = io.Copy(attach.Conn, sourcecode)
-	if err != nil {
-		removeContainer()
-		return
-	}
-	attach.Conn.Close()
+	// copy input file to stdin of the container in the background
+	go func() {
+		_, err = io.Copy(attach.Conn, sourcecode)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			return
+		}
+		attach.Conn.Close()
+	}()
 
 	// connect to the logging to follow progress
-	logs, err := cli.ContainerLogs(ctx, c.ID, types.ContainerLogsOptions{
+	logs, err := client.ContainerLogs(ctx, id, types.ContainerLogsOptions{
 		ShowStderr: true,
 		ShowStdout: true,
 		Follow:     true,
 	})
 	if err != nil {
-		removeContainer()
 		return
 	}
-
-	// watch output
 	_, err = stdcopy.StdCopy(os.Stdout, os.Stderr, logs)
 	if err != nil {
 		return
 	}
 
-	// inspect container state
-	state, err := cli.ContainerInspect(ctx, c.ID)
+	// inspect container state after exit and return any errors
+	state, err := client.ContainerInspect(ctx, id)
 	if err != nil {
 		return
-	}
-
-	// and return any errors
-	if state.State.ExitCode != 0 {
+	} else if state.State.ExitCode != 0 {
 		err = errors.New(state.State.Error)
 		return
 	}
 
-	// copy release files
-	release, _, err = cli.CopyFromContainer(ctx, c.ID, "/releases/")
-	if err != nil {
-		return
-	}
-
-	err = removeContainer()
-	if err != nil {
-		return
-	}
-
-	err = cli.Close()
+	// copy release tarball
+	release, _, err = client.CopyFromContainer(ctx, id, "/releases")
 	return
 
 }

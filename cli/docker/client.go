@@ -6,16 +6,16 @@ package docker
 import (
 	"context"
 
-	"github.com/docker/docker/client"
+	Docker "github.com/docker/docker/client"
 )
 
 // create default client and negotiate api version
-func newDockerClient() (cli *client.Client, ctx context.Context, err error) {
-	ctx = context.Background()
-	cli, err = client.NewClientWithOpts(client.FromEnv)
+func newDockerClient() (client *Docker.Client, ctx context.Context, cancel context.CancelFunc, err error) {
+	ctx, cancel = context.WithCancel(context.Background())
+	client, err = Docker.NewClientWithOpts(Docker.FromEnv)
 	if err != nil {
 		return
 	}
-	cli.NegotiateAPIVersion(ctx)
+	client.NegotiateAPIVersion(ctx)
 	return
 }
