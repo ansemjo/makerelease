@@ -15,7 +15,7 @@ should be small enough to manually audit. The basic gist is:
   - create a new container from a [Golang] template with fixed version
   - install software commonly required for building
   - set up environment and paths like `WORKDIR`, `RELEASEDIR` and `TEMPDIR`
-  - put the `makerelease.sh` script in place and mark is as the entrypoint
+  - put the `makerelease.sh` script in place and mark it as the entrypoint
 - `makerelease.sh`
   - read a tar archive with the project source code from stdin and extract
     - optionally perform decompression
@@ -26,7 +26,7 @@ should be small enough to manually audit. The basic gist is:
     - perform build steps defined in `makefile`
   - finish up release, e.g. calculate checksums
 
-Currently, the container uses Go 1.11 RC1 and thus supports vendoring with `go mod`.
+Currently, the container uses Go 1.11 RC2 and thus supports vendoring with `go mod`.
 
 ## your project must bring ...
 
@@ -79,7 +79,7 @@ If you want to pack a local directory be sure to use a single prefix component, 
 ~$ tar cf archive.tar -C /path/to/source/code ./
 ```
 
-And not directly from within the directory:
+And **not** directly from within the directory:
 
 ```shell
 /path/to/source/code$ tar cf ~/archive.tar cli/ container/ makefile [...]
@@ -93,6 +93,16 @@ means either adding your user to the `docker` group if you are not root (this is
 though) or configuring
 [environment variables](https://docs.docker.com/engine/reference/commandline/cli/#environment-variables)
 beforehand.
+
+If you have a CoreOS host at your disposal you could do this, for example:
+
+```shell
+$ ssh -L ~/docker.sock:/var/run/docker.sock -Nf core@coreos.mydomain.tld
+$ export DOCKER_HOST=unix://$HOME/docker.sock
+```
+
+This forwards the docker socket, puts ssh in the background and exports a `DOCKER_HOST` value to
+instruct Docker to use the forwarded socket. Then continue with [mkr commands](#binary-usage).
 
 ### example makefile
 
