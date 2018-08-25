@@ -23,7 +23,10 @@ func BuildImage(buildcontext io.Reader, image string) (err error) {
 	defer client.Close()
 
 	// begin building image
-	build, err := client.ImageBuild(ctx, buildcontext, types.ImageBuildOptions{Tags: []string{image}})
+	build, err := client.ImageBuild(ctx, buildcontext, types.ImageBuildOptions{
+		Tags:   []string{image},
+		Remove: true,
+	})
 	if err != nil {
 		return
 	}
