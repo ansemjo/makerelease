@@ -24,13 +24,15 @@ ENV \
   GOCACHE=/tmp/gocache \
   TEMPDIR=/tmp/makerelease \
   RELEASEDIR=/releases \
-  WORKDIR=/build \
-  HOME=/build
+  WORKDIR=/build
+
+# add unpriviledged user
+RUN adduser -u 1000 -D makerelease
 
 # create workdir and release directory
-RUN mkdir -p "${RELEASEDIR}" "${WORKDIR}" \
-  && chmod 1777 "${RELEASEDIR}" "${WORKDIR}"
+RUN mkdir -m 1777 -p "${RELEASEDIR}" "${WORKDIR}"
 WORKDIR ${WORKDIR}
+USER makerelease
 
 # entrypoint script, arguments can be given during docker run
 COPY makerelease.sh /usr/bin/makerelease.sh
