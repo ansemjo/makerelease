@@ -5,7 +5,7 @@ package main
 
 import (
 	"github.com/ansemjo/makerelease/cli/assets"
-	"github.com/ansemjo/makerelease/cli/docker"
+	"github.com/ansemjo/makerelease/cli/mkr"
 	"github.com/spf13/cobra"
 )
 
@@ -37,7 +37,7 @@ var buildImageCmd = &cobra.Command{
 		defer bc.Close()
 
 		// build the image
-		err = docker.BuildImage(bc, tag)
+		err = mkr.BuildImage(bc, tag)
 		handleError(err)
 
 	},

@@ -4,7 +4,7 @@
 package main
 
 import (
-	mkr "github.com/ansemjo/makerelease/cli/docker"
+	"github.com/ansemjo/makerelease/cli/mkr"
 	"github.com/ansemjo/makerelease/cli/tar"
 	"github.com/spf13/cobra"
 )
