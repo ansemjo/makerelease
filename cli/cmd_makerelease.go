@@ -9,7 +9,23 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// main cli command
+func init() {
+	this := makeReleaseCmd
+
+	// add to main, disable sorting
+	cmd.AddCommand(this)
+	this.Flags().SortFlags = false
+
+	// add flags
+	addOutdirFlag(this)
+	addInfileFlag(this)
+	addTagFlag(this)
+	addTargetsFlag(this)
+	addEnvironmentFlag(this)
+
+}
+
+// make a release from passed source tarball
 var makeReleaseCmd = &cobra.Command{
 	Use:     "release",
 	Aliases: []string{"rl"},
@@ -69,31 +85,4 @@ Pack a local code directory and pipe it directly:
 		handleError(err)
 
 	},
-}
-
-// run pre-run checks of cobra flags
-func checkAll(cmd *cobra.Command, checker ...func(*cobra.Command) error) (err error) {
-	for _, ch := range checker {
-		err = ch(cmd)
-		if err != nil {
-			return
-		}
-	}
-	return
-}
-
-func init() {
-	this := makeReleaseCmd
-
-	// add to main, disable sorting
-	cmd.AddCommand(this)
-	this.Flags().SortFlags = false
-
-	// add flags
-	addOutdirFlag(this)
-	addInfileFlag(this)
-	addTagFlag(this)
-	addTargetsFlag(this)
-	addEnvironmentFlag(this)
-
 }

@@ -10,9 +10,15 @@ import (
 )
 
 func init() {
-	cmd.AddCommand(buildImageCmd)
-	buildImageCmd.Flags().SortFlags = false
-	addTagFlag(buildImageCmd)
+	this := buildImageCmd
+
+	// add to main, disable sorting
+	cmd.AddCommand(this)
+	this.Flags().SortFlags = false
+
+	// add flags
+	addTagFlag(this)
+
 }
 
 // simple command to generate the required builder image

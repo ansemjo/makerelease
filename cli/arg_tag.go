@@ -8,10 +8,9 @@ import (
 )
 
 // the tagged docker image to use
-var (
-	tag        string
-	tagFlag    = []string{"tag", "t", "ansemjo/makerelease", "docker image/tag to use"}
-	addTagFlag = func(cmd *cobra.Command) {
-		cmd.Flags().StringVarP(&tag, tagFlag[0], tagFlag[1], tagFlag[2], tagFlag[3])
-	}
-)
+var tag string
+
+// add flag to command
+func addTagFlag(cmd *cobra.Command) {
+	cmd.Flags().StringVarP(&tag, "tag", "t", "ansemjo/makerelease", "docker image/tag to use")
+}
