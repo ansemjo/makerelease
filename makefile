@@ -29,6 +29,11 @@ dockerized-release: $(RELEASES)
 release: image
 	tar c ./makefile ./container ./cli | make dockerized-release
 
+# build the cli with an existing mkr binary
+release-mkr:
+	mkr image
+	tar c ./makefile ./container ./cli | mkr release
+
 # delegate to submakefile
 mkrelease-prepare mkrelease mkrelease-finish:
 	make -C cli $@
