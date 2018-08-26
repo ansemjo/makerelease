@@ -125,6 +125,19 @@ $ make image
 $ make dockerized-release < ~/master.tar.gz
 ```
 
+**Note:** neither the `dockerized-release` target nor the manual docker command above work with
+remote Docker daemons because they try to bind-mount the release directory. In that case you will
+need to run the container without any mounts and then copy the release manually afterwards:
+
+```shell
+$ docker build -t makerelease container/
+$ cat master.tar.gz | docker run -i --name selfrelease makerelease
+$ docker cp selfrelease:/releases release/
+$ docker rm selfrelease
+```
+
+This is essentially what the `mkr` binary does.
+
 ### build the binary
 
 Alternatively, compile and use the included Go binary `mkr` under [`cli/`](cli/). To compile and
