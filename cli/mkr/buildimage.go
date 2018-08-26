@@ -9,6 +9,7 @@ import (
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/pkg/jsonmessage"
+	"golang.org/x/crypto/ssh/terminal"
 )
 
 // BuildImage builds a Docker image from the passed build context.
@@ -33,7 +34,8 @@ func BuildImage(buildcontext io.Reader, image string) (err error) {
 	defer build.Body.Close()
 
 	// print message stream to stdout
-	err = jsonmessage.DisplayJSONMessagesStream(build.Body, os.Stdout, os.Stdout.Fd(), true, nil)
+	err = jsonmessage.DisplayJSONMessagesStream(build.Body,
+		os.Stdout, os.Stdout.Fd(), terminal.IsTerminal(int(os.Stdout.Fd())), nil)
 	return
 
 }
