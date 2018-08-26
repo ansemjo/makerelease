@@ -4,15 +4,19 @@
 package main
 
 import (
+	"fmt"
 	"os"
+	"runtime"
 
 	"github.com/spf13/cobra"
 )
 
+const version = "1.2.0"
+
 // main cli command
 var cmd = &cobra.Command{
 	Use:     "mkr",
-	Version: "0.1.1",
+	Version: fmt.Sprintf("%s (%s/%s, runtime %s)", version, runtime.GOOS, runtime.GOARCH, runtime.Version()),
 }
 
 func init() {
