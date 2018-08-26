@@ -26,7 +26,7 @@ should be small enough to manually audit. The basic gist is:
     - perform build steps defined in `makefile`
   - finish up release, e.g. calculate checksums
 
-Currently, the container uses Go 1.11 RC2 and thus supports vendoring with `go mod`.
+Currently, the container uses Go 1.11 RC2 and thus supports modules with `go mod`.
 
 ## your project must bring ...
 
@@ -63,27 +63,17 @@ least the makefile - inside. During extraction, `tar` is called with `--strip-co
 source code lands in `WORKDIR` directly. For example, the downloaded archive for this project looks
 like this:
 
-```shell
-$ tar tf makerelease-master.tar.gz
-makerelease-master/
-makerelease-master/.gitignore
-makerelease-master/cli/
-makerelease-master/cli/assets.go
-[...]
-```
+    $ tar tf makerelease-master.tar.gz
+    makerelease-master/
+    makerelease-master/.gitignore
+    makerelease-master/cli/
+    makerelease-master/cli/assets.go
+    [...]
 
 If you want to pack a local directory be sure to use a single prefix component, even if it's just
-`./`. I.e.:
+`./`:
 
-```shell
-~$ tar cf archive.tar -C /path/to/source/code ./
-```
-
-And **not** directly from within the directory:
-
-```shell
-/path/to/source/code$ tar cf ~/archive.tar cli/ container/ makefile [...]
-```
+    tar cf archive.tar -C /path/to/source/code ./
 
 ### docker daemon
 
@@ -102,102 +92,58 @@ $ export DOCKER_HOST=unix://$HOME/docker.sock
 ```
 
 This forwards the docker socket, puts ssh in the background and exports a `DOCKER_HOST` value to
-instruct Docker to use the forwarded socket. Then continue with [mkr commands](#binary-usage).
+instruct Docker to use the forwarded socket. Then continue with [mkr commands](#usage).
 
 ### example makefile
 
 For an example, take a look at this projects own [makefile](cli/makefile).
 
-## building
+## building a project
 
-As noted above, the Docker image is the actual heart of this project. You can use it completely
-standalone by building and running it manually like this:
+As noted above, the Docker image is the actual heart of this project and you can use it completely
+standalone:
 
-```shell
-$ docker build -t makerelease container/
-$ cat master.tar.gz | docker run --rm -i -v $PWD/release:/release makerelease
-```
+    docker build -t makerelease container/
+    docker run -i --name myrelease makerelease < master.tar.gz
+    docker cp myrelease:/releases release/
+    docker rm myrelease
 
-Or use the makefile target from within this directory:
+The [cli](#usage) is a lot easier to use though:
 
-```shell
-$ make image
-$ make dockerized-release < ~/master.tar.gz
-```
+    mkr image
+    mkr release < master.tar.gz
 
-**Note:** neither the `dockerized-release` target nor the manual docker command above work with
-remote Docker daemons because they try to bind-mount the release directory. In that case you will
-need to run the container without any mounts and then copy the release manually afterwards:
+# installation
 
-```shell
-$ docker build -t makerelease container/
-$ cat master.tar.gz | docker run -i --name selfrelease makerelease
-$ docker cp selfrelease:/releases release/
-$ docker rm selfrelease
-```
+Installation notes can be found in [INSTALL.md](INSTALL.md).
 
-This is essentially what the `mkr` binary does.
+# usage
 
-### build the binary
+The binary is more or less just an interface to start the [Docker](https://github.com/docker/docker)
+container with the correct parameters and pipe the source code into it in a user-friendly way,
+completely independent from this project's makefile.
 
-Alternatively, compile and use the included Go binary `mkr` under [`cli/`](cli/). To compile and
-install it use (`$GOPATH/bin` should be in your `PATH`):
+If the Docker daemon does not have the correct image yet, you can use the binary to build it because
+the required build context is [embedded](https://github.com/gobuffalo/packr):
 
-```shell
-$ make install
-$ mkr --help
-```
-
-This currently requires that your `go` binary points to a Go release 1.11 or higher, which supports
-the `mod` subcommand.
-
-To build all the binary releases with the container (to build itself so to say):
-
-```shell
-$ make release
-```
-
-This will take a while and then place binaries in the `./release/` subdirectory.
-
-## binary usage
-
-The binary is more or less just an interface to start the [Docker](https://github.com/moby/moby)
-container with the correct parameters and pipe the source code into it in a usable way, independent
-from this project makefile.
-
-If you have the binary on a machine where the Docker image does not yet exist, you can use the
-binary to build it because the required build context is
-[embedded](https://github.com/gobuffalo/packr) in the binary:
-
-```shell
-$ mkr image
-```
+    mkr image
 
 Then, to build releases use the `release` / `rl` subcommand:
 
-```shell
-$ mkr rl -f master.tar.gz
-```
+    mkr rl -f master.tar.gz
 
 Specify the output directory with `-d`:
 
-```shell
-$ cat master.tar.gz | mkr rl -d /path/to/release/output
-```
+    mkr rl -d /path/to/release/output < master.tar.gz
 
 Specify target list overrides with `-T`:
 
-```shell
-$ tar c ./ | mkr rl -T linux/amd64
-```
+    tar c ./ | mkr rl -T linux/amd64
 
-If in doubt, you can use `--help` at any point. The CLI is built with the excellent
+If in doubt, you can use `help`/`--help` at any point. The CLI is built with the excellent
 [cobra](https://github.com/spf13/cobra) commander which provides nice-looking usage information:
 
-```shell
-$ mkr help
-$ mkr release --help
-```
+    mkr help
 
 ## library usage
 
