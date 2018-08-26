@@ -6,7 +6,7 @@ IMAGE := ansemjo/makerelease
 RELEASES := $(PWD)/release
 UIDGID := $(shell echo "$$(id -u):$$(id -g)")
 
-.PHONY : default image install dockerized-release prepare-release release finish-release self clean
+.PHONY : default image install dockerized-release mkrelease-prepare mkrelease mkrelease-finish release clean
 default : mkr
 
 # create output directory
@@ -26,7 +26,7 @@ dockerized-release: $(RELEASES)
 		$(IMAGE)
 
 # build the cli using the dockerized process
-self: image
+release: image
 	tar c ./makefile ./container ./cli | make dockerized-release
 
 # delegate to submakefile

@@ -141,7 +141,7 @@ the `mod` subcommand.
 To build all the binary releases with the container (to build itself so to say):
 
 ```shell
-$ make self
+$ make release
 ```
 
 This will take a while and then place binaries in the `./release/` subdirectory.
