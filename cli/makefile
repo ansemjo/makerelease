@@ -4,11 +4,13 @@
 # this makefile requires Go 1.11+
 .PHONY : mkrelease-prepare mkrelease mkrelease-finish
 
-mkrelease-prepare:
+assets/context.tar: $(shell find ../container -type f)
 	mkdir -p assets
-	(cd ../container && tar c --mtime=1970-01-01 *) > assets/context.tar
+	(cd ../container && tar c --mtime=1970-01-01 *) > $@
+
+mkrelease-prepare: assets/context.tar
 	go get github.com/gobuffalo/packr/...
-	go mod vendor
+	go mod download
 
 EXT := $(if $(findstring windows,$(OS)),.exe)
 mkrelease:
@@ -17,4 +19,4 @@ mkrelease:
 
 mkrelease-finish:
 	upx $(RELEASEDIR)/* || true
-	cd $(RELEASEDIR) && sha256sum * | tee sha256sums
+	cd $(RELEASEDIR) && sha256sum * | tee SHA256SUMS
