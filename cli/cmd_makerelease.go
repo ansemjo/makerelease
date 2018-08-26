@@ -43,15 +43,7 @@ Pack a local code directory and pipe it directly:
   tar c -C /path/to/code ./ | mkr rl -d output`,
 
 	PreRunE: func(cmd *cobra.Command, args []string) (err error) {
-		err = checkTargetFlag(cmd)
-		if err != nil {
-			return
-		}
-		err = checkOutDirFlag(cmd)
-		if err != nil {
-			return
-		}
-		return checkInFileFlag(cmd)
+		return checkAll(cmd, checkTargetFlag, checkEnvironmentFlag, checkOutDirFlag, checkInFileFlag)
 	},
 
 	Run: func(cmd *cobra.Command, args []string) {
@@ -60,7 +52,7 @@ Pack a local code directory and pipe it directly:
 		err := func() (err error) {
 
 			// build the release
-			cfg := mkr.MakeReleaseConfig{Targets: targets, Image: tag}
+			cfg := mkr.MakeReleaseConfig{Targets: targets, Env: environment, Image: tag}
 			release, err := mkr.MakeRelease(infile, cfg)
 			if err != nil {
 				return
@@ -79,11 +71,29 @@ Pack a local code directory and pipe it directly:
 	},
 }
 
+// run pre-run checks of cobra flags
+func checkAll(cmd *cobra.Command, checker ...func(*cobra.Command) error) (err error) {
+	for _, ch := range checker {
+		err = ch(cmd)
+		if err != nil {
+			return
+		}
+	}
+	return
+}
+
 func init() {
-	cmd.AddCommand(makeReleaseCmd)
-	makeReleaseCmd.Flags().SortFlags = false
-	addOutdirFlag(makeReleaseCmd)
-	addInfileFlag(makeReleaseCmd)
-	addTagFlag(makeReleaseCmd)
-	addTargetsFlag(makeReleaseCmd)
+	this := makeReleaseCmd
+
+	// add to main, disable sorting
+	cmd.AddCommand(this)
+	this.Flags().SortFlags = false
+
+	// add flags
+	addOutdirFlag(this)
+	addInfileFlag(this)
+	addTagFlag(this)
+	addTargetsFlag(this)
+	addEnvironmentFlag(this)
+
 }

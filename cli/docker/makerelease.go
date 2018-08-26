@@ -23,6 +23,7 @@ import (
 // and possibly override the release targets.
 type MakeReleaseConfig struct {
 	Image   string
+	Env     []string
 	Targets []string
 }
 
@@ -38,7 +39,7 @@ func MakeRelease(sourcecode io.Reader, config MakeReleaseConfig) (release io.Rea
 	}
 
 	// assemble container environment
-	var env []string
+	env := config.Env
 	if len(config.Targets) > 0 {
 		tg := fmt.Sprintf("TARGETS=%s", strings.Join(config.Targets, " "))
 		env = append(env, tg)
