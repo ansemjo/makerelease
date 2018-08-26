@@ -11,7 +11,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-const version = "1.2.0"
+const version = "1.2.1"
 
 // main cli command
 var cmd = &cobra.Command{
