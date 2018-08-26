@@ -198,3 +198,17 @@ If in doubt, you can use `--help` at any point. The CLI is built with the excell
 $ mkr help
 $ mkr release --help
 ```
+
+## library usage
+
+It should be possible to use `mkr` in your own Go applications. I'd be interested to hear how that
+works out. :)
+
+You'll need to import `github.com/ansemjo/makerelease/cli/mkr`. See the cli implementation for
+examples:
+
+- `mkr.BuildImage()` in [cmd_buildimage.go > buildImageCmd > Run](cli/cmd_buildimage.go#L34)
+- `mkr.MakeRelease()` in [cmd_makerelease.go > makeReleaseCmd > Run](cli/cmd_makerelease.go#L63)
+
+`MakeRelease()` returns a `ReadCloser` of the release tar archive. The Docker client connection is
+only closed and the container removed when you close that reader, so don't forget to do that.
