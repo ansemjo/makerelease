@@ -12,5 +12,5 @@ var tag string
 
 // add flag to command
 func addTagFlag(cmd *cobra.Command) {
-	cmd.Flags().StringVarP(&tag, "tag", "t", "ansemjo/makerelease", "docker image/tag to use")
+	cmd.Flags().StringVarP(&tag, "tag", "t", "ansemjo/makerelease:"+version, "docker image/tag to use")
 }
