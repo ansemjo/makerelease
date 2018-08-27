@@ -8,6 +8,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/spf13/cobra"
 )
@@ -44,6 +45,12 @@ func handleError(err error) {
 
 		// print error and exit
 		fmt.Fprintln(os.Stderr, err)
+
+		// suggest building the image
+		if strings.HasPrefix(err.Error(), "Error: No such image") {
+			fmt.Fprintln(os.Stderr, "try running 'mkr image' to build it")
+		}
+
 		os.Exit(1)
 
 	}
