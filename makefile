@@ -3,7 +3,8 @@
 
 .PHONY : mkr install image dockerized release mkrelease-prepare mkrelease mkrelease-finish clean
 
-IMAGE 	:= ansemjo/makerelease:latest
+VERSION := $(shell sed -n 's/^const version.*"\([0-9a-z.-]\+\)"$$/\1/p' cli/cmd_main.go)
+IMAGE   := ansemjo/makerelease:$(VERSION)
 RELEASE := $(PWD)/release
 
 # compile binary, requires Go 1.11+
