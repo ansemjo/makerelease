@@ -4,8 +4,8 @@
 package main
 
 import (
-	"github.com/ansemjo/makerelease/cli/assets"
 	"github.com/ansemjo/makerelease/cli/mkr"
+	"github.com/gobuffalo/packr"
 	"github.com/spf13/cobra"
 )
 
@@ -21,6 +21,10 @@ func init() {
 
 }
 
+// Box includes static assets, embedded during compilation.
+// E.g. the Docker build context: `context.tar.gz`.
+var assets = packr.NewBox("assets")
+
 // simple command to generate the required builder image
 var buildImageCmd = &cobra.Command{
 
@@ -32,7 +36,7 @@ var buildImageCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 
 		// open embedded build context
-		bc, err := assets.Box.Open("context.tar.gz")
+		bc, err := assets.Open("context.tar.gz")
 		handleError(err)
 		defer bc.Close()
 
