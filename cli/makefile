@@ -11,7 +11,7 @@ RELEASEDIR := $(PWD)
 
 assets/context.tar: $(shell find ../container -type f)
 	mkdir -p assets
-	(cd ../container && tar c --mtime=1970-01-01 --owner=0 --group=0 *) > $@
+	(cd ../container && tar c --mtime="1970-01-01 00:00:00 UTC" --owner=0 --group=0 *) > $@
 
 mkrelease-prepare: assets/context.tar
 	go get github.com/gobuffalo/packr/...
