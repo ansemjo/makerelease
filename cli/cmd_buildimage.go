@@ -32,7 +32,7 @@ var buildImageCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 
 		// open embedded build context
-		bc, err := assets.Box.Open("context.tar")
+		bc, err := assets.Box.Open("context.tar.gz")
 		handleError(err)
 		defer bc.Close()
 
