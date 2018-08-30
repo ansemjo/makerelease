@@ -13,7 +13,7 @@ func init() {
 	this := buildImageCmd
 
 	// add to main, disable sorting
-	cmd.AddCommand(this)
+	mkrCmd.AddCommand(this)
 	this.Flags().SortFlags = false
 
 	// add flags

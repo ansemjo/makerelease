@@ -14,7 +14,7 @@ import (
 const version = "0.3.2"
 
 // main cli command
-var cmd = &cobra.Command{
+var mkrCmd = &cobra.Command{
 	Use:     "mkr",
 	Version: fmt.Sprintf("%s (%s/%s, runtime %s)", version, runtime.GOOS, runtime.GOARCH, runtime.Version()),
 }
@@ -24,7 +24,7 @@ func init() {
 }
 
 func main() {
-	if err := cmd.Execute(); err != nil {
+	if err := mkrCmd.Execute(); err != nil {
 		os.Exit(1)
 	}
 }

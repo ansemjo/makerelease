@@ -19,12 +19,15 @@ RUN apk add --no-cache \
   ${SOFTWARE}
 
 # prepare environment
+ARG MKR_IMAGE=unknown
 ENV \
   CACHEDIR=/tmp/buildcache \
   GOCACHE=/tmp/gocache \
   TEMPDIR=/tmp/makerelease \
   RELEASEDIR=/releases \
-  WORKDIR=/build
+  WORKDIR=/build \
+  MKR_IMAGE=${MKR_IMAGE} \
+  MKR_VERSION=unknown
 
 # add unpriviledged user
 RUN adduser -u 1000 -D makerelease

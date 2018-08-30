@@ -13,7 +13,7 @@ func init() {
 	this := makeReleaseCmd
 
 	// add to main, disable sorting
-	cmd.AddCommand(this)
+	mkrCmd.AddCommand(this)
 	this.Flags().SortFlags = false
 
 	// add flags
@@ -66,6 +66,9 @@ Pack a local code directory and pipe it directly:
 
 		// nest the function to always run deferred cleanup
 		err := func() (err error) {
+
+			// add current mkr version in environment
+			environment = append(environment, "MKR_VERSION=mkr version "+mkrCmd.Version)
 
 			// build the release
 			cfg := mkr.MakeReleaseConfig{Targets: targets, Env: environment, Image: tag}

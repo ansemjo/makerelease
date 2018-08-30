@@ -19,12 +19,12 @@ install: mkr
 
 # build docker image
 image:
-	docker build -t $(IMAGE) container/
+	docker build --build-arg MKR_IMAGE=$(IMAGE) -t $(IMAGE) container/
 
 # make a release in the container
 MAKERID := mkr-$(shell date +%F-%s)
 dockerized:
-	docker run -i	--name $(MAKERID) $(IMAGE)
+	docker run -i	--name $(MAKERID) -e MKR_VERSION=makefile $(IMAGE)
 	docker cp $(MAKERID):/releases $(RELEASE)
 	docker rm $(MAKERID)
 

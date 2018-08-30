@@ -25,8 +25,9 @@ func BuildImage(buildcontext io.Reader, image string) (err error) {
 
 	// begin building image
 	build, err := client.ImageBuild(ctx, buildcontext, types.ImageBuildOptions{
-		Tags:   []string{image},
-		Remove: true,
+		Tags:      []string{image},
+		Remove:    true,
+		BuildArgs: map[string]*string{"MKR_IMAGE": &image},
 	})
 	if err != nil {
 		return
