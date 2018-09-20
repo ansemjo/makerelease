@@ -29,6 +29,9 @@ var (
 			archList := strings.Split(goarchList, " ")
 
 			for _, target := range targets {
+				if target == "host" {
+					continue
+				}
 				t := strings.Split(target, "/")
 				if len(t) != 2 {
 					return fmt.Errorf("could not parse target: %s", target)

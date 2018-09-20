@@ -38,6 +38,11 @@ printf 'defined release targets:\n'; printf ' - %s\n' $TARGETS
 # finally make targets
 for target in $TARGETS; do
 
+  # build for host architecture
+  if [[ $target == host ]]; then
+    target=$(printf '%s/%s\n' $(go env GOHOSTOS GOHOSTARCH))
+  fi
+
   printf 'make target: %s ...\n' "$target"
 
   OS=$(dirname "$target")
