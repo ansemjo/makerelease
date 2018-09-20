@@ -24,4 +24,5 @@ mkrelease:
 
 mkrelease-finish:
 	upx $(RELEASEDIR)/* || true
-	cd $(RELEASEDIR) && sha256sum * | tee SHA256SUMS
+	printf "# built with %s in %s\n" "$$MKR_VERSION" "$$MKR_IMAGE" > $(RELEASEDIR)/SHA256SUMS
+	cd $(RELEASEDIR) && sha256sum mkr-* | tee -a SHA256SUMS
