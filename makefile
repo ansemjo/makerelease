@@ -22,9 +22,9 @@ image:
 	docker build --build-arg MKR_IMAGE=$(IMAGE) -t $(IMAGE) container/
 
 # make a release in the container
-MAKERID := mkr-$(shell date +%F-%s)
+MAKERID := mkr-$(shell date --utc +%F-%s)
 dockerized:
-	docker run -i	--name $(MAKERID) -e MKR_VERSION=makefile $(IMAGE)
+	docker run -i --name $(MAKERID) -e TARGETS=$(TARGETS) -e MKR_VERSION=makefile $(IMAGE)
 	docker cp $(MAKERID):/releases $(RELEASE)
 	docker rm $(MAKERID)
 
