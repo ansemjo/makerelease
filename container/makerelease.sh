@@ -9,6 +9,9 @@ set -e
 # timestamp in YYYY-MM-DD-UNIXEPOCH format
 export TIMESTAMP=$(date --utc +%F-%s)
 printf 'starting makerelease.sh %s ...\n' "$TIMESTAMP"
+printf 'running with %s in %s\n' \
+  "${MKR_VERSION:-unknown mkr version}" \
+  "${MKR_IMAGE:-unknown image}"
 
 # unpack source tarball, with decompression based on mime-type
 printf 'reading tar archive from stdin ...\n'
