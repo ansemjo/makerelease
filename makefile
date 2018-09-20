@@ -1,11 +1,11 @@
 # Copyright (c) 2018 Anton Semjonov
 # Licensed under the MIT License
 
-.PHONY : mkr install image dockerized release release2 mkrelease-prepare mkrelease mkrelease-finish clean
-
 VERSION := $(shell sed -n 's/^const version.*"\([0-9a-z.-]\+\)"$$/\1/p' cli/cmd_main.go)
 IMAGE   := ansemjo/makerelease:$(VERSION)
 RELEASE := $(PWD)/release
+
+.PHONY : mkr install image dockerized
 
 # compile binary, requires Go 1.11+
 mkr: mkrelease-prepare mkrelease
@@ -28,17 +28,30 @@ dockerized:
 	docker cp $(MAKERID):/releases $(RELEASE)
 	docker rm $(MAKERID)
 
-# build the cli using the dockerized build process
-release: image
-	tar c ./makefile ./container ./cli | make dockerized
+.PHONY: release selfrelease
 
-# build the cli using a built intermediate mkr binary
-release2: clean mkr
-	git archive --prefix=./ HEAD | ./mkr rl
+# build the cli using the dockerized build process
+release: clean image
+	make -s archive | make dockerized
+
+# release the cli using an intermediate mkr binary
+selfrelease: clean image
+	make -s archive | make dockerized TARGETS=host
+	mv release/mkr-*-* mkr
+	git clean -fdx -e mkr
+	./mkr image
+	make -s archive | ./mkr release
 
 # delegate to submakefile
+.PHONY: mkrelease-prepare mkrelease mkrelease-finish
 mkrelease-prepare mkrelease mkrelease-finish:
 	make -C cli $@
+
+.PHONY: archive clean
+
+# output a project archive of current HEAD
+archive:
+	@git archive --prefix=mkr/ HEAD
 
 # clean files not tracked by git
 clean:
