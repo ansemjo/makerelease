@@ -1,7 +1,7 @@
 # Copyright (c) 2018 Anton Semjonov
 # Licensed under the MIT License
 
-.PHONY : mkr install image dockerized release mkrelease-prepare mkrelease mkrelease-finish clean
+.PHONY : mkr install image dockerized release release2 mkrelease-prepare mkrelease mkrelease-finish clean
 
 VERSION := $(shell sed -n 's/^const version.*"\([0-9a-z.-]\+\)"$$/\1/p' cli/cmd_main.go)
 IMAGE   := ansemjo/makerelease:$(VERSION)
@@ -31,6 +31,10 @@ dockerized:
 # build the cli using the dockerized build process
 release: image
 	tar c ./makefile ./container ./cli | make dockerized
+
+# build the cli using a built intermediate mkr binary
+release2: clean mkr
+	git archive --prefix=./ HEAD | ./mkr rl
 
 # delegate to submakefile
 mkrelease-prepare mkrelease mkrelease-finish:
