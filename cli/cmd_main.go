@@ -11,7 +11,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-const version = "0.3.2"
+const version = "0.3.3"
 
 // main cli command
 var mkrCmd = &cobra.Command{
