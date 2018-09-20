@@ -26,7 +26,7 @@ should be small enough to manually audit. The basic gist is:
     - perform build steps defined in `makefile`
   - finish up release, e.g. calculate checksums
 
-Currently, the container uses Go 1.11 RC2 and thus supports modules with `go mod`.
+The container uses Go 1.11 and thus supports modules with `go mod`.
 
 ## your project must bring ...
 
