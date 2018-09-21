@@ -2,9 +2,11 @@
 
 ## from sources
 
+### compile locally with Go 1.11+
+
 To compile `mkr` from sources use:
 
-    make mkr
+    make mkr-local
     ./mkr --help
 
 This currently requires that your `go` binary points to a Go release 1.11 or higher, which supports
@@ -16,15 +18,33 @@ The manual steps would be:
     go get github.com/gobuffalo/packr/...
     (cd cli && CGO_ENABLED=0 packr build -o ../mkr)
 
+### reproducible
+
+If you want to compile a reproducible binary using a Docker container use:
+
+    make image
+    make mkr
+
+This should produce an identical file to the ones you can download from GitHub.
+
+### install
+
 You can install the resulting binary, assuming that `~/.local/bin` is in your `$PATH`:
 
     make install
 
-To build all the binary releases with the container (to release itself so to say):
+### create a release
+
+To build a release with all the binaries using a container (to release itself so to say):
 
     make release
 
 This will take a while and then place binaries in the `./release/` subdirectory.
+
+A more paranoid approach is first building a `mkr` binary for your local host and then use that to
+build all the other releases:
+
+    make selfrelease
 
 ## download a release
 
