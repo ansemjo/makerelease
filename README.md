@@ -46,14 +46,16 @@ given environment variables and defines the correct targets. Those targets are:
 
 The most useful environment variables during the above procedure:
 
-| variable     | available   | description                                                                                                           |
-| ------------ | ----------- | --------------------------------------------------------------------------------------------------------------------- |
-| `TIMESTAMP`  | all         | Starting time in `YYYY-MM-DD-UNIXEPOCH` format. _Careful:_ including<br> timestamps can often break reproduceability! |
-| `WORKDIR`    | all         | Directory with extracted source code.                                                                                 |
-| `TEMPDIR`    | all         | Temporary scratchpad.                                                                                                 |
-| `RELEASEDIR` | all         | Output directory which is commonly mounted from the host machine.                                                     |
-| `OS`         | `mkrelease` | Target operating system. Commonly `linux`, `darwin`, `*bsd`, `windows`, etc.                                          |
-| `ARCH`       | `mkrelease` | Target architecture. Commonly `amd64`, `386`, `arm`, etc.                                                             |
+| variable      | available   | description                                                                                                           |
+| ------------- | ----------- | --------------------------------------------------------------------------------------------------------------------- |
+| `TIMESTAMP`   | all         | Starting time in `YYYY-MM-DD-UNIXEPOCH` format. _Careful:_ including<br> timestamps can often break reproduceability! |
+| `WORKDIR`     | all         | Directory with extracted source code.                                                                                 |
+| `TEMPDIR`     | all         | Temporary scratchpad.                                                                                                 |
+| `RELEASEDIR`  | all         | Output directory which is commonly mounted from the host machine.                                                     |
+| `OS`          | `mkrelease` | Target operating system. Commonly `linux`, `darwin`, `*bsd`, `windows`, etc.                                          |
+| `ARCH`        | `mkrelease` | Target architecture. Commonly `amd64`, `386`, `arm`, etc.                                                             |
+| `MKR_VERSION` | all         | Version of the `mkr` binary used.                                                                                     |
+| `MKR_IMAGE`   | all         | Version / tag of the Docker image used.                                                                               |
 
 ### source code
 
@@ -74,6 +76,10 @@ If you want to pack a local directory be sure to use a single prefix component, 
 `./`:
 
     tar cf archive.tar -C /path/to/source/code ./
+
+Or use git's built-in `archive` command:
+
+    git archive --prefix=./ HEAD > latest.tar
 
 ### docker daemon
 

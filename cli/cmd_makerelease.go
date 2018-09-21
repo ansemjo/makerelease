@@ -56,7 +56,7 @@ Build from a downloaded source archive:
   mkr rl -f master.tar.gz
 
 Pack a local code directory and pipe it directly:
-  tar c -C /path/to/code ./ | mkr rl -d output`,
+  git archive --prefix=./ HEAD | mkr rl -d output`,
 
 	PreRunE: func(cmd *cobra.Command, args []string) (err error) {
 		return checkAll(cmd, checkTargetFlag, checkEnvironmentFlag, checkOutDirFlag, checkInFileFlag)
