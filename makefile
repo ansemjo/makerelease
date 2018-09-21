@@ -5,11 +5,18 @@ VERSION := $(shell sed -n 's/^const version.*"\([0-9a-z.-]\+\)"$$/\1/p' cli/cmd_
 IMAGE   := ansemjo/makerelease:$(VERSION)
 RELEASE := $(PWD)/release
 
-.PHONY : mkr install image dockerized
+.PHONY : mkr-local install image dockerized
 
-# compile binary, requires Go 1.11+
-mkr: mkrelease-prepare mkrelease
+# compile binary locally quickly, requires Go 1.11+
+mkr-local: mkrelease-prepare mkrelease
 	mv mkr-*-* mkr
+
+# compile binary using the release process
+mkr:
+	rm -rf release/
+	make -s archive | make dockerized TARGETS=host
+	mv release/mkr-*-* mkr
+	rm -rf release/
 
 # install in local path
 PREFIX := $(shell [ $$(id -u) -eq 0 ] && echo /usr/local || echo ~/.local)
@@ -30,15 +37,12 @@ dockerized:
 
 .PHONY: release selfrelease
 
-# build the cli using the dockerized build process
-release: clean image
+# release the cli using the dockerized build process
+release: image
 	make -s archive | make dockerized
 
 # release the cli using an intermediate mkr binary
-selfrelease: clean image
-	make -s archive | make dockerized TARGETS=host
-	mv release/mkr-*-* mkr
-	git clean -fdx -e mkr
+selfrelease: image mkr
 	./mkr image
 	make -s archive | ./mkr release
 
