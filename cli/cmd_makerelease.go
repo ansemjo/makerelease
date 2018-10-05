@@ -4,6 +4,8 @@
 package main
 
 import (
+	"os"
+
 	"github.com/ansemjo/makerelease/cli/mkr"
 	"github.com/ansemjo/makerelease/cli/tar"
 	"github.com/spf13/cobra"
@@ -77,6 +79,12 @@ Pack a local code directory and pipe it directly:
 				return
 			}
 			defer release.Close()
+
+			// create directory
+			err = os.MkdirAll(outdir, 0755)
+			if err != nil {
+				return
+			}
 
 			// untar to target directory, stripping the path prefix
 			err = tar.Untar(outdir, release, "releases/")

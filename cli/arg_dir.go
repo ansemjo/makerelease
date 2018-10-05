@@ -4,27 +4,27 @@
 package main
 
 import (
+	"errors"
 	"os"
-	"path/filepath"
 
 	"github.com/spf13/cobra"
 )
 
 // output: release directory
 var outdir string
-var outdirArg string
 
 // add flag to command
 func addOutdirFlag(cmd *cobra.Command) {
-	cmd.Flags().StringVarP(&outdirArg, "dir", "d", "release", "release directory")
+	cmd.Flags().StringVarP(&outdir, "dir", "d", "release", "release directory")
 }
 
-// create output directory and transform to absolute path
 func checkOutDirFlag(cmd *cobra.Command) (err error) {
-	err = os.MkdirAll(outdirArg, 0755)
-	if err != nil {
-		return
+	stat, err := os.Stat(outdir)
+	if os.IsNotExist(err) || stat.IsDir() {
+		return nil
 	}
-	outdir, err = filepath.Abs(outdirArg)
-	return
+	if err != nil {
+		return err
+	}
+	return errors.New("file exists: " + outdir)
 }
