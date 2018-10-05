@@ -14,7 +14,7 @@ assets/context.tar.gz: $(shell find ../container -type f)
 	(cd ../container && tar cz --mtime="1970-01-01 00:00:00 UTC" --owner=0 --group=0 *) > $@
 
 mkrelease-prepare: assets/context.tar.gz
-	go get github.com/gobuffalo/packr/...
+	GO111MODULE=off go get github.com/gobuffalo/packr/...
 	go mod download
 
 EXT := $(if $(findstring windows,$(OS)),.exe)
